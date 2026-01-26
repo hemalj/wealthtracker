@@ -564,23 +564,58 @@ interface Symbol {
     isin: string | null;             // "US0378331005"
   };
 
-  // Classification
-  assetType: 'stock' | 'etf' | 'mutual_fund' | 'bond' | 'crypto' | 'other';
-  sector: string | null;             // "Technology"
-  industry: string | null;           // "Consumer Electronics"
+  // Classification (for portfolio analytics and filtering)
+  assetType: 'common_stock' | 'preferred_stock' | 'etf' | 'mutual_fund' | 'index' | 'bond' | 'reit' | 'adr' | 'other';
+  sector: string | null;             // "Technology", "Healthcare", "Financial Services", etc.
+  industry: string | null;           // "Consumer Electronics", "Biotechnology", "Regional Banks", etc.
+  industryGroup: string | null;      // "Technology Hardware", "Pharmaceuticals", etc.
+
+  // Market characteristics
+  marketCap: {
+    category: 'mega_cap' | 'large_cap' | 'mid_cap' | 'small_cap' | 'micro_cap' | 'nano_cap' | null;
+    value: number | null;            // Market cap in USD (updated from EODHD)
+    asOf: Timestamp | null;          // When market cap was last updated
+  };
+
+  // Dividend information
+  dividend: {
+    isDividendPaying: boolean;
+    frequency: 'monthly' | 'quarterly' | 'semi_annual' | 'annual' | 'irregular' | null;
+    yield: number | null;            // Current dividend yield (%)
+    lastDividendDate: Timestamp | null;
+    lastDividendAmount: number | null;
+  };
+
+  // Index memberships (for benchmarking and filtering)
+  indexMemberships: string[];        // ["SP500", "DOW30", "NASDAQ100", "RUSSELL2000", etc.]
+
+  // Additional metadata (from EODHD or manual entry)
+  description: string | null;        // Company description
+  website: string | null;            // Company website
+  ceo: string | null;                // CEO name
+  employees: number | null;          // Number of employees
+  founded: number | null;            // Year founded
+  headquarters: string | null;       // "Cupertino, CA, USA"
 
   // Status
   isActive: boolean;
   isDelisted: boolean;
   delistDate: Timestamp | null;
+  delistReason: string | null;
 
   // Usage stats
   usageCount: number;                // How many users have this symbol
+
+  // Data management
+  manualOverride: boolean;           // If true, don't auto-update from EODHD
+  dataSource: 'eodhd' | 'manual' | 'hybrid';
+  dataQuality: 'complete' | 'partial' | 'minimal';  // Data completeness indicator
 
   // Metadata
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastSyncedAt: Timestamp | null;    // Last sync from EODHD
+  lastSyncedBy: string | null;       // 'system' or userId if manual
 }
 ```
 
@@ -600,26 +635,59 @@ interface Symbol {
     "type": "Common Stock",
     "isin": "US0378331005"
   },
-  "assetType": "stock",
+  "assetType": "common_stock",
   "sector": "Technology",
   "industry": "Consumer Electronics",
+  "industryGroup": "Technology Hardware",
+  "marketCap": {
+    "category": "mega_cap",
+    "value": 2800000000000,
+    "asOf": "2026-01-26T16:00:00Z"
+  },
+  "dividend": {
+    "isDividendPaying": true,
+    "frequency": "quarterly",
+    "yield": 0.52,
+    "lastDividendDate": "2026-01-15T00:00:00Z",
+    "lastDividendAmount": 0.24
+  },
+  "indexMemberships": ["SP500", "DOW30", "NASDAQ100"],
+  "description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
+  "website": "https://www.apple.com",
+  "ceo": "Tim Cook",
+  "employees": 164000,
+  "founded": 1976,
+  "headquarters": "Cupertino, CA, USA",
   "isActive": true,
   "isDelisted": false,
   "delistDate": null,
+  "delistReason": null,
   "usageCount": 523,
+  "manualOverride": false,
+  "dataSource": "eodhd",
+  "dataQuality": "complete",
   "createdAt": "2026-01-01T00:00:00Z",
   "updatedAt": "2026-01-26T00:00:00Z",
-  "lastSyncedAt": "2026-01-26T00:00:00Z"
+  "lastSyncedAt": "2026-01-26T00:00:00Z",
+  "lastSyncedBy": "system"
 }
 ```
 
 ### Indexes
 
 ```javascript
+// Basic lookups
 symbols: [symbol ASC, exchange ASC]
 symbols: [exchange ASC, isActive ASC]
 symbols: [country ASC, isActive ASC]
 symbols: [usageCount DESC]
+
+// Analytics and filtering
+symbols: [sector ASC, industry ASC]
+symbols: [sector ASC, isActive ASC]
+symbols: [assetType ASC, sector ASC]
+symbols: [marketCap.category ASC]
+symbols: [dividend.isDividendPaying ASC, dividend.yield DESC]
 
 // Full-text search (requires Algolia or Elasticsearch extension)
 symbols: [name ASC]

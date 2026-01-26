@@ -536,23 +536,50 @@ This document provides detailed functional specifications for all WealthTracker 
 
 **FR-ADMIN-001**: Stock Symbol List
 - Table view of all symbols in system
-- Columns: Symbol, Name, Exchange, Currency, Country, Active Status, Last Updated
-- Search by symbol or name
-- Filter by exchange, currency, active status
+- Columns: Symbol, Name, Exchange, Currency, Country, Sector, Industry, Type, Active Status, Last Updated
+- Search by symbol, name, or company
+- Filter by exchange, currency, country, sector, industry, asset type, active status
+- Sort by any column
 - Pagination (100 per page)
+- Export to CSV option
 
 **FR-ADMIN-002**: Add/Edit Stock Symbol
 - Form fields:
-  - Symbol (text, required)
-  - Name (text, required)
-  - Exchange (dropdown: NYSE, NASDAQ, TSX, NSE, etc., required)
-  - Currency (dropdown, required)
+
+  **Basic Information**:
+  - Symbol (text, required, e.g., "AAPL")
+  - Company Name (text, required, e.g., "Apple Inc.")
+  - Exchange (dropdown: NYSE, NASDAQ, TSX, NSE, LSE, etc., required)
+  - Currency (dropdown: USD, CAD, EUR, GBP, INR, etc., required)
   - Country (dropdown, required)
-  - ISIN (text, optional)
-  - Active (boolean, default: true)
+  - ISIN (text, optional, e.g., "US0378331005")
   - EODHDCode (text, required, e.g., "AAPL.US")
+
+  **Classification** (for portfolio analytics):
+  - Asset Type (dropdown: Common Stock, Preferred Stock, ETF, Mutual Fund, Index, Bond, REIT, ADR, required)
+  - Sector (dropdown: Technology, Healthcare, Financial Services, Consumer Cyclical, Consumer Defensive, Industrials, Energy, Utilities, Real Estate, Basic Materials, Communication Services, required for stocks)
+  - Industry (dropdown, depends on sector, optional, e.g., "Consumer Electronics", "Biotechnology", "Regional Banks")
+  - Industry Group (text, optional, e.g., "Technology Hardware")
+
+  **Additional Metadata**:
+  - Market Cap Category (dropdown: Mega Cap, Large Cap, Mid Cap, Small Cap, Micro Cap, optional)
+  - Is Dividend Paying (boolean, default: false)
+  - Dividend Frequency (dropdown: Monthly, Quarterly, Semi-Annual, Annual, optional)
+  - Index Memberships (multi-select: S&P 500, Dow Jones, NASDAQ 100, Russell 2000, etc., optional)
+
+  **Status**:
+  - Active (boolean, default: true)
+  - Is Delisted (boolean, default: false)
+  - Delist Date (date, optional)
+  - Delist Reason (text, optional)
+
+  **Data Source**:
+  - Last Updated From EODHD (timestamp, auto)
+  - Manual Override (boolean, default: false - allows admin to manually maintain data)
+
 - Validate uniqueness: Symbol + Exchange
-- Save triggers API test to EODHD
+- Save triggers API test to EODHD to verify symbol exists
+- Auto-populate sector/industry from EODHD when available
 
 **FR-ADMIN-003**: Bulk Symbol Import
 - Upload CSV with symbol data
