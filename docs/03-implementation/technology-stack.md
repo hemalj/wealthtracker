@@ -264,6 +264,129 @@ This document details all technologies, libraries, tools, and services used in W
 
 ---
 
+### Progressive Web App (PWA)
+
+**Vite PWA Plugin**
+- **Purpose**: Generate service worker and PWA manifest
+- **Why**: Zero-config PWA setup with Vite
+- **License**: MIT
+- **Installation**: `npm install -D vite-plugin-pwa`
+- **Features**:
+  - Auto-generate service worker
+  - Workbox integration
+  - Offline fallback
+  - Asset caching strategies
+  - Web app manifest generation
+- **Configuration** (`vite.config.ts`):
+  ```typescript
+  import { VitePWA } from 'vite-plugin-pwa';
+
+  export default defineConfig({
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+        manifest: {
+          name: 'WealthTracker',
+          short_name: 'WealthTracker',
+          description: 'Investment Portfolio Management',
+          theme_color: '#1976d2',
+          background_color: '#ffffff',
+          display: 'standalone',
+          orientation: 'portrait',
+          icons: [
+            {
+              src: 'pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable'
+            }
+          ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'firestore-cache',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                }
+              }
+            }
+          ]
+        }
+      })
+    ]
+  });
+  ```
+
+**Workbox v7** (Included with vite-plugin-pwa)
+- **Purpose**: Production-ready service worker library
+- **Why**: Industry-standard PWA service worker toolkit
+- **Features**:
+  - Precaching
+  - Runtime caching
+  - Background sync
+  - Offline analytics
+  - Workbox strategies (CacheFirst, NetworkFirst, StaleWhileRevalidate)
+
+**react-device-detect v2**
+- **Purpose**: Detect mobile/tablet/desktop
+- **Why**: Conditional rendering for device-specific features
+- **License**: MIT
+- **Installation**: `npm install react-device-detect`
+- **Example**:
+  ```typescript
+  import { isMobile, isTablet, isDesktop } from 'react-device-detect';
+
+  function Navigation() {
+    return isMobile ? <BottomNav /> : <SideNav />;
+  }
+  ```
+
+**react-swipeable v7**
+- **Purpose**: Touch gesture support
+- **Why**: Native-like swipe interactions for mobile
+- **License**: MIT
+- **Installation**: `npm install react-swipeable`
+- **Example**:
+  ```typescript
+  import { useSwipeable } from 'react-swipeable';
+
+  function Card() {
+    const handlers = useSwipeable({
+      onSwipedLeft: () => console.log('swiped left'),
+      onSwipedRight: () => console.log('swiped right'),
+    });
+
+    return <div {...handlers}>Swipeable Card</div>;
+  }
+  ```
+
+**capacitor v6** (Future - For App Store Deployment)
+- **Purpose**: Package PWA as native iOS/Android app
+- **Why**: Deploy to app stores without rewriting code
+- **License**: MIT
+- **Installation**: `npm install @capacitor/core @capacitor/cli`
+- **When**: Phase 5 (App Store Deployment)
+- **Features**:
+  - iOS app wrapper
+  - Android app wrapper
+  - Native plugin access (camera, biometrics, etc.)
+  - App store deployment
+
+---
+
 ## Backend Stack (Firebase)
 
 ### Firebase Services

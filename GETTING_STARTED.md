@@ -6,8 +6,9 @@ WealthTracker is a subscription-based investment portfolio management SaaS platf
 
 **Target Market**: Individual retail investors managing multiple brokerage accounts
 **Business Model**: Freemium (free tier with all features, paid tiers for power users)
-**Tech Stack**: React + TypeScript + Firebase + EODHD API
+**Tech Stack**: React + TypeScript + Firebase + EODHD API (Mobile-First PWA)
 **MVP Timeline**: 3-4 months
+**PWA & App Store**: Months 11-15
 **Target Cost**: ~$20/month during MVP, scaling to ~$220/month at 1,000 users
 
 ---
@@ -27,6 +28,9 @@ WealthTracker is a subscription-based investment portfolio management SaaS platf
 - Real-time analytics and reporting
 - Multi-currency and international market support
 - Professional-grade tools at consumer pricing
+- **Mobile-first design** for on-the-go portfolio management
+- **Progressive Web App** with native app-like experience
+- **Future app store deployment** (iOS & Android)
 
 ---
 
@@ -41,7 +45,7 @@ WealthTracker is a subscription-based investment portfolio management SaaS platf
 ✅ Simple & Compound Interest Calculators
 ✅ User profile & settings
 ✅ Admin dashboard (stock symbol management)
-✅ Mobile responsive design
+✅ **Mobile-first responsive design** (touch-optimized, 320px+)
 
 ### Post-MVP Features (Month 5-7)
 - Bulk CSV import/export
@@ -56,6 +60,13 @@ WealthTracker is a subscription-based investment portfolio management SaaS platf
 - Tax optimization tools
 - Portfolio sharing
 - API access
+
+### PWA & Mobile App (Month 11-15)
+- **Progressive Web App** (Month 11-12): Installable, offline-capable, push notifications
+- **iOS App Store** (Month 13-15): Native wrapper for app store deployment
+- **Google Play Store** (Month 13-15): Android app deployment
+- Biometric authentication (Face ID, Touch ID)
+- Native app-like experience
 
 ---
 
@@ -246,6 +257,8 @@ npm run dev
 4. **Multi-Currency Native**: Support international investing from day one
 5. **Privacy-Focused**: No brokerage credentials required
 6. **Data Ownership**: Export data anytime, no lock-in
+7. **Mobile-First Design**: Built for mobile, enhanced for desktop
+8. **PWA Technology**: Installable app without app store restrictions (Phase 4)
 
 ---
 
@@ -255,10 +268,9 @@ npm run dev
 - ❌ Live trading capabilities
 - ❌ Social/community features
 - ❌ Cryptocurrency wallets
-- ❌ Mobile native apps (responsive web for MVP)
 - ❌ Advanced tax filing automation
 
-These may be considered post-MVP based on user demand.
+**Note**: Mobile-first PWA and app store deployment are planned for Phases 4-5 (Months 11-15).
 
 ---
 

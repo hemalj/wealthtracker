@@ -31,6 +31,8 @@ A centralized, cloud-based platform that:
 - Offers real-time portfolio analytics and reporting
 - Supports multi-currency and international markets
 - Delivers professional-grade calculators and tools
+- **Mobile-first design** for on-the-go portfolio management
+- **Progressive Web App (PWA)** for native app-like experience
 
 ## Product Goals
 
@@ -44,9 +46,10 @@ A centralized, cloud-based platform that:
 ### Product Goals
 1. **Ease of Use**: < 5 minutes to set up first portfolio
 2. **Accuracy**: 99.9% accurate portfolio calculations
-3. **Performance**: < 2 second page load times
-4. **Reliability**: 99.5% uptime SLA
-5. **Support**: Professional-grade features at consumer pricing
+3. **Performance**: < 2 second page load times on mobile, < 1 second on desktop
+4. **Mobile-First**: Optimized for mobile devices with touch-friendly interface
+5. **Reliability**: 99.5% uptime SLA
+6. **Support**: Professional-grade features at consumer pricing
 
 ## Value Proposition
 
@@ -78,6 +81,8 @@ A centralized, cloud-based platform that:
 3. **Freemium Model**: All features free to start, pay for scale
 4. **Multi-Currency**: Native support for international investing
 5. **Data Ownership**: Users own and control their data
+6. **Mobile-First**: Native app-like experience on any device
+7. **PWA Technology**: Installable app without app store restrictions
 
 ### Differentiation Strategy
 - Focus on **manual control** for users who want precision
@@ -85,6 +90,8 @@ A centralized, cloud-based platform that:
 - **Privacy-focused**: No brokerage credentials required
 - **International**: Multi-currency from day one
 - **Open**: Export data anytime, no lock-in
+- **Mobile-first design**: Built for mobile, enhanced for desktop
+- **PWA technology**: Install like a native app, update like a web app
 
 ## Success Metrics
 
@@ -134,9 +141,10 @@ A centralized, cloud-based platform that:
 ### Technical Principles
 1. **Cloud Native**: Built for scale and reliability
 2. **Real-time**: Instant updates and synchronization
-3. **Mobile Ready**: Responsive design for all devices
-4. **API First**: Every feature accessible via API
-5. **Data Portability**: Easy import/export at all times
+3. **Mobile First**: Designed for mobile, enhanced for desktop
+4. **Progressive Web App**: Installable, offline-capable, app-like experience
+5. **API First**: Every feature accessible via API
+6. **Data Portability**: Easy import/export at all times
 
 ### Business Principles
 1. **Freemium**: All core features free forever

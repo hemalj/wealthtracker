@@ -700,21 +700,42 @@ This document provides detailed functional specifications for all WealthTracker 
 
 ---
 
-### 9.3 Mobile Responsive (Recommended)
+### 9.3 Mobile-First Design & PWA
 
-**Priority**: Must Have (MVP)
+**Priority**: Must Have (MVP for mobile-first, PWA in Phase 4)
 
-**FR-MOBILE-001**: Responsive Design
-- Optimized layouts for mobile (320px+), tablet (768px+), desktop (1024px+)
-- Touch-friendly controls
-- Bottom navigation for mobile
-- Simplified mobile views (progressive disclosure)
+**FR-MOBILE-001**: Mobile-First Responsive Design
+- **Design Approach**: Mobile-first (320px+), progressively enhanced for tablet (768px+) and desktop (1024px+)
+- **Touch-Optimized**: 44px minimum touch targets, swipe gestures, pull-to-refresh
+- **Mobile Navigation**: Bottom navigation bar for thumb-friendly access
+- **Simplified Views**: Progressive disclosure (show essentials, hide complexity)
+- **Performance**: < 2 seconds page load on 3G connection
+- **Viewport**: Proper viewport meta tag, no horizontal scrolling
+- **Images**: Responsive images with srcset, lazy loading
 
-**FR-MOBILE-002**: Progressive Web App (PWA)
-- Installable on mobile devices
-- Offline viewing of cached data
-- Push notifications (price alerts, dividend payments)
-- Background sync
+**FR-MOBILE-002**: Progressive Web App (PWA) - Phase 4
+- **Service Worker**: Offline support and asset caching
+- **Web App Manifest**: Installable on home screen (Add to Home Screen)
+- **App Shell**: Fast initial load with app shell architecture
+- **Offline Mode**: View portfolio and cached data without internet
+- **Background Sync**: Queue transactions when offline, sync when online
+- **Push Notifications**: Price alerts, dividend payments, portfolio updates (Phase 4+)
+- **App-Like Experience**: Standalone display mode, splash screen
+- **Update Strategy**: Auto-update when new version available
+
+**FR-MOBILE-003**: Touch Interactions
+- **Swipe Gestures**: Swipe to delete transactions, navigate between screens
+- **Long Press**: Long press for contextual actions
+- **Pull to Refresh**: Native-like pull-to-refresh for data updates
+- **Pinch to Zoom**: Chart zoom on mobile
+- **Haptic Feedback**: Vibration feedback for actions (optional)
+
+**FR-MOBILE-004**: Mobile-Specific Features (Phase 4+)
+- **Bottom Sheet**: Modal actions from bottom (native-like)
+- **Floating Action Button**: Quick add transaction
+- **Search Overlay**: Full-screen search on mobile
+- **Card-Based Layout**: Swipeable cards for transactions/holdings
+- **Camera Integration**: Scan receipts/documents (future)
 
 ---
 

@@ -76,7 +76,13 @@ WealthTracker is built as a modern, cloud-native single-page application (SPA) u
 
 ### 1. Client Layer (Frontend)
 
-**Technology**: React 18+ with TypeScript, Vite build tool
+**Technology**: React 18+ with TypeScript, Vite build tool, PWA-enabled
+
+**Design Approach**: Mobile-First Progressive Web App
+- Design for mobile screens first (320px+)
+- Progressive enhancement for larger screens
+- Touch-optimized interactions
+- App-like experience with PWA features
 
 **Components**:
 - **UI Components**: Reusable React components (Material-UI or Chakra UI)
@@ -85,15 +91,18 @@ WealthTracker is built as a modern, cloud-native single-page application (SPA) u
 - **Routing**: React Router v6 for SPA navigation
 - **Forms**: React Hook Form for complex forms
 - **Charts**: Recharts or Nivo for data visualization
+- **PWA**: Service Worker, Web App Manifest, Offline support
 
 **Responsibilities**:
-- Render user interface
-- Handle user interactions
+- Render user interface (mobile-first)
+- Handle user interactions (touch and mouse)
 - Manage client-side state
 - Validate user inputs
 - Call Firebase SDK methods
 - Real-time data synchronization
 - Optimistic UI updates
+- Offline data caching
+- Background sync when online
 
 **Key Patterns**:
 - Component-driven architecture
@@ -101,6 +110,16 @@ WealthTracker is built as a modern, cloud-native single-page application (SPA) u
 - Custom hooks for logic reuse
 - Error boundaries for fault tolerance
 - Lazy loading for performance
+- Progressive enhancement (mobile → desktop)
+- Offline-first data strategy
+
+**PWA Features** (Phase 4+):
+- Service Worker for offline support
+- Web App Manifest for installability
+- App Shell architecture for fast loads
+- Background sync for offline transactions
+- Push notifications for portfolio alerts
+- Add to Home Screen capability
 
 ---
 
@@ -455,13 +474,18 @@ await sgMail.send({
 
 ### Performance Optimization
 
-**Frontend**:
+**Frontend** (Mobile-First Optimizations):
 - Code splitting (React.lazy, dynamic imports)
 - Lazy loading images and charts
 - Memoization (React.memo, useMemo, useCallback)
 - Virtual scrolling for large tables
 - Debounced search inputs
-- Service worker for offline caching
+- Service worker for offline caching and PWA
+- Image optimization (WebP format, responsive images)
+- Touch gesture optimization (passive event listeners)
+- CSS-in-JS with minimal runtime overhead
+- Bundle size target: <200KB initial JS (gzipped)
+- Minimize reflows and repaints for smooth scrolling
 
 **Backend**:
 - Firestore indexes for fast queries

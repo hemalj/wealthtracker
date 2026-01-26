@@ -208,8 +208,10 @@ This document outlines the phased development approach for WealthTracker, from M
 - [x] Symbol search
 
 ### Non-Functional ✓
-- [x] Responsive design (mobile/tablet/desktop)
-- [x] Performance (<2s page load)
+- [x] Mobile-first responsive design (mobile/tablet/desktop)
+- [x] Performance (<2s page load on mobile, <1s on desktop)
+- [x] Touch-friendly interface (44px minimum touch targets)
+- [x] PWA-ready architecture (service worker, manifest)
 - [x] Security (Firebase Auth, Firestore Rules)
 - [x] Error handling
 - [x] Loading states
@@ -363,7 +365,117 @@ This document outlines the phased development approach for WealthTracker, from M
 
 ---
 
-## Phase 4: Advanced Features (Months 11-12)
+## Phase 4: PWA Implementation & Mobile Enhancement (Months 11-12)
+
+**Goal**: Transform into a full Progressive Web App with native app-like experience
+
+**Target Date**: Month 12 (December 2026)
+
+### PWA Core Features
+- **Service Worker**: Offline support and caching
+- **Web App Manifest**: Installable on home screen
+- **App Shell Architecture**: Fast initial load
+- **Background Sync**: Sync data when connection returns
+- **Push Notifications**: Real-time alerts for portfolio changes
+- **Add to Home Screen**: One-tap install prompt
+- **Splash Screen**: Branded loading experience
+
+### Mobile-First Enhancements
+- **Touch-Optimized UI**: Large touch targets, swipe gestures
+- **Bottom Navigation**: Thumb-friendly mobile navigation
+- **Pull to Refresh**: Native-feeling data refresh
+- **Haptic Feedback**: Touch feedback for actions
+- **Mobile-Specific Views**: Optimized layouts for small screens
+- **Quick Actions**: Shortcuts for common tasks
+- **Camera Integration**: Scan receipts/documents (future)
+
+### Offline Capabilities
+- View portfolio without internet connection
+- Queue transactions for sync when online
+- Cached price data (last known values)
+- Offline-first data strategy
+- Background sync when connection returns
+
+### Performance Optimization
+- **Code Splitting**: Load only what's needed
+- **Lazy Loading**: Images and components on demand
+- **Resource Caching**: Cache assets aggressively
+- **Minimize Bundle Size**: Target <200KB initial JS bundle
+- **Lighthouse Score**: Target 90+ on mobile
+
+### Security & Authentication
+- **Biometric Auth**: Face ID, Touch ID, fingerprint
+- **Secure Storage**: Encrypted local data
+- **Token Management**: Secure credential handling
+- **Auto-logout**: Configurable inactivity timeout
+
+**Benefits**:
+- Native app-like experience without app store
+- Works offline for on-the-go access
+- Faster load times (app shell architecture)
+- Lower data usage (aggressive caching)
+- Push notifications for engagement
+- No app store review process or fees
+
+---
+
+## Phase 5: App Store Deployment (Months 13-15)
+
+**Goal**: Package PWA for iOS App Store and Google Play Store
+
+**Target Date**: Month 15 (March 2027)
+
+### iOS App Store (using PWABuilder/Capacitor)
+- **PWA Wrapper**: Package PWA as native iOS app
+- **Apple Developer Account**: $99/year enrollment
+- **App Store Assets**: Screenshots, icons, descriptions
+- **App Store Optimization**: Keywords, ratings strategy
+- **TestFlight Beta**: Internal testing before launch
+- **App Review**: Submit for Apple review
+- **Launch**: Deploy to App Store
+
+### Google Play Store (using Trusted Web Activity)
+- **TWA Implementation**: Android native wrapper for PWA
+- **Google Play Console**: $25 one-time registration
+- **Play Store Assets**: Feature graphics, screenshots
+- **Play Store Optimization**: ASO keywords, metadata
+- **Internal Testing**: Closed beta testing
+- **Production Release**: Launch on Google Play
+
+### Deep Linking
+- **Universal Links** (iOS): app.wealthtracker.com opens in app
+- **App Links** (Android): Seamless web-to-app transitions
+- **Deep Link Routing**: Navigate to specific screens
+
+### App Store Features
+- **In-App Purchases**: Subscription management (alternative to Stripe)
+- **App Ratings & Reviews**: Rating prompts, review management
+- **App Analytics**: Track installs, engagement, retention
+- **App Store Presence**: Featured listings, search optimization
+
+### Maintenance
+- **Version Management**: Coordinate web and app versions
+- **App Updates**: Push updates through stores
+- **Store Review Process**: Handle reviews and ratings
+- **Compliance**: Privacy policies, terms of service
+
+**Benefits**:
+- Reach users who prefer app stores
+- Improved discoverability through app stores
+- Native app credibility and trust
+- App store SEO and marketing
+- In-app purchase options
+- Push notification permissions (easier to grant)
+
+**Estimated Costs**:
+- Apple Developer: $99/year
+- Google Play: $25 one-time
+- PWA-to-native tooling: Free (Capacitor/PWABuilder)
+- Total: ~$125/year ongoing
+
+---
+
+## Phase 6: Advanced Features (Months 16-18)
 
 **Goal**: Differentiate with unique features
 
@@ -374,14 +486,6 @@ This document outlines the phased development approach for WealthTracker, from M
 - Price alerts
 - Position size alerts
 - Rebalancing suggestions
-
-### Mobile Experience
-- Progressive Web App (PWA)
-- Offline mode
-- Push notifications
-- Mobile-optimized views
-- Quick actions
-- Biometric authentication
 
 ### Collaboration & Sharing
 - Portfolio sharing (read-only links)
