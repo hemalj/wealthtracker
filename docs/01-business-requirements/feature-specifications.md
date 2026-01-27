@@ -201,6 +201,9 @@ This document provides detailed functional specifications for all WealthTracker 
   - Unit Price (number, required for Buy/Sell/Initial)
   - Total Amount (calculated or manual for Dividend, required)
   - Currency (dropdown, required)
+  - Fees (number, optional, other transaction fees)
+  - Commission (number, optional, trading commission in dollars)
+  - MER (number, optional, Management Expense Ratio deduction in dollars, typically for mutual funds/ETFs)
   - Notes (text area, optional)
   - Split Ratio (for splits, e.g., "2:1", required for splits)
 

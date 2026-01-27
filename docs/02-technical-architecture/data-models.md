@@ -259,7 +259,9 @@ interface Transaction {
   quantity: number | null;           // 100 (null for dividends)
   unitPrice: number | null;          // 150.50 (null for dividends)
   totalAmount: number;               // 15050.00 (quantity * unitPrice, or dividend amount)
-  fees: number;                      // 0.00 (commissions, optional)
+  fees: number;                      // 0.00 (other transaction fees, optional)
+  commission: number | null;         // 9.99 (trading commission, null if not applicable)
+  mer: number | null;                // 12.50 (Management Expense Ratio deduction in dollars, for mutual funds/ETFs)
 
   // Split details (only for split transactions)
   splitRatio: string | null;         // "2:1" (new:old) for forward, "1:5" for reverse
@@ -309,8 +311,11 @@ interface Transaction {
   "unitPrice": 150.50,
   "totalAmount": 15050.00,
   "fees": 0.00,
+  "commission": 9.99,
+  "mer": null,
   "splitRatio": null,
   "splitRatioMultiplier": null,
+  "cashInLieu": null,
   "costBasis": null,
   "realizedGain": null,
   "realizedGainPercent": null,
@@ -341,8 +346,11 @@ interface Transaction {
   "unitPrice": 175.25,
   "totalAmount": 8762.50,
   "fees": 0.00,
+  "commission": 9.99,
+  "mer": null,
   "splitRatio": null,
   "splitRatioMultiplier": null,
+  "cashInLieu": null,
   "costBasis": 7525.00,
   "realizedGain": 1237.50,
   "realizedGainPercent": 16.44,
@@ -381,8 +389,11 @@ interface Transaction {
   "unitPrice": null,
   "totalAmount": 24.00,
   "fees": 0.00,
+  "commission": null,
+  "mer": null,
   "splitRatio": null,
   "splitRatioMultiplier": null,
+  "cashInLieu": null,
   "costBasis": null,
   "realizedGain": null,
   "realizedGainPercent": null,
@@ -413,6 +424,8 @@ interface Transaction {
   "unitPrice": null,
   "totalAmount": 0.00,
   "fees": 0.00,
+  "commission": null,
+  "mer": null,
   "splitRatio": "4:1",
   "splitRatioMultiplier": 4.0,
   "cashInLieu": null,
@@ -446,6 +459,8 @@ interface Transaction {
   "unitPrice": null,
   "totalAmount": 0.00,
   "fees": 0.00,
+  "commission": null,
+  "mer": null,
   "splitRatio": "1:5",
   "splitRatioMultiplier": 0.2,
   "cashInLieu": 84.50,
