@@ -390,6 +390,44 @@ Positions are **calculated in real-time** from transaction history, not stored s
 
 ---
 
+#### Dual Cost Basis Methods
+
+**The system supports TWO cost basis calculation methods simultaneously:**
+
+1. **Average Cost Basis** (Default)
+   - **What it is**: Simple average of all purchase costs
+   - **Formula**: Total cost basis ÷ Total shares = Average cost per share
+   - **When to use**: Matches most brokerage statements, easier to understand
+   - **Example**: Buy 100 @ $10, Buy 50 @ $12 → Avg cost = ($1000 + $600) / 150 = $10.67/share
+
+2. **Tax Lot Basis (FIFO)**
+   - **What it is**: Tracks each purchase as a separate lot, sells use First-In-First-Out
+   - **When to use**: Tax optimization, accurate capital gains reporting, Schedule D
+   - **Example**: Same purchases tracked as Lot 1 (100 @ $10) and Lot 2 (50 @ $12)
+
+**Key Differences:**
+
+| Aspect | Average Cost | Tax Lot (FIFO) |
+|--------|--------------|----------------|
+| **Calculation** | Simple average | Tracks individual lots |
+| **Realized Gains** | Uses average cost | Uses actual lot costs |
+| **Tax Reporting** | Approximate | Precise |
+| **Complexity** | Simple | More complex |
+| **Use Case** | Quick overview | Tax optimization |
+
+**User Preference:**
+- Users can set `preferences.costBasisMethod` = `'average_cost'` or `'tax_lot_fifo'`
+- Users can toggle `preferences.showTaxLotView` = `true` to see tax lot details
+- Default: Average cost view
+- System always maintains tax lot data internally for accurate realized gains
+
+**Why Both?**
+- **Average Cost**: Easier for users to understand, matches brokerage statements
+- **Tax Lot**: Required for accurate tax reporting and tax optimization strategies
+- Users can switch between views based on their needs
+
+---
+
 #### FR-TRANS-301: Position Aggregation Algorithm
 
 **Step 1: Fetch All Transactions**
@@ -603,23 +641,79 @@ position.avgCostPerShare = 250 / 5 = 50  // ✅ Correct!
 
 ---
 
-**Step 4: Calculate Current Metrics**
-```typescript
-// Average cost per share
-position.avgCostPerShare = position.quantity > 0
-  ? position.costBasis / position.quantity
-  : 0
+**Step 4: Calculate Current Metrics (Both Cost Basis Methods)**
 
-// Market value (requires current price)
+```typescript
+// Market value (common to both methods)
 position.marketValue = position.quantity * currentPrice
 
-// Unrealized gain
-position.unrealizedGain = position.marketValue - position.costBasis
-position.unrealizedGainPercent = (position.unrealizedGain / position.costBasis) * 100
+// --- AVERAGE COST BASIS (Default View) ---
+position.avgCost = {
+  costBasis: position.costBasis,  // Total cost from all tax lots
+  costPerShare: position.quantity > 0 ? position.costBasis / position.quantity : 0,
+  unrealizedGain: position.marketValue - position.costBasis,
+  unrealizedGainPercent: (position.marketValue - position.costBasis) / position.costBasis * 100
+}
+
+// --- TAX LOT BASIS (FIFO - for tax optimization) ---
+// Tax lots are already maintained from Step 3 processing
+position.taxLots = position.taxLots.map(lot => {
+  const currentDate = new Date()
+  const purchaseDate = lot.date
+  const holdingPeriodDays = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24)
+
+  return {
+    lotId: lot.transactionId,
+    purchaseDate: lot.date,
+    transactionId: lot.transactionId,
+    quantity: lot.quantity,
+    costBasis: lot.costBasis,
+    costPerShare: lot.costPerShare,
+    unrealizedGain: (currentPrice * lot.quantity) - lot.costBasis,
+    holdingPeriod: holdingPeriodDays >= 365 ? 'long' : 'short'
+  }
+})
+
+// Tax lot summary
+position.taxLotSummary = {
+  totalCostBasis: position.taxLots.reduce((sum, lot) => sum + lot.costBasis, 0),
+  shortTermLots: position.taxLots.filter(lot => lot.holdingPeriod === 'short').length,
+  longTermLots: position.taxLots.filter(lot => lot.holdingPeriod === 'long').length,
+  oldestLotDate: position.taxLots[0]?.purchaseDate || null
+}
 
 // Total return (realized + unrealized + dividends)
-position.totalReturn = position.realizedGain + position.unrealizedGain + position.dividendIncome
+position.totalReturn = position.realizedGain + position.avgCost.unrealizedGain + position.dividendIncome
 position.totalReturnPercent = (position.totalReturn / (position.costBasis + Math.abs(position.realizedGain))) * 100
+```
+
+**Example Output for User with 100 shares:**
+
+**Average Cost View** (Default):
+```
+Quantity: 100 shares
+Cost Basis: $1,050
+Avg Cost/Share: $10.50
+Current Value: $1,500
+Unrealized Gain: $450 (+42.9%)
+```
+
+**Tax Lot View** (Detailed):
+```
+Lot 1: 50 shares @ $10/share (Jan 15, 2025) - Long term
+  Cost: $500, Value: $750, Gain: $250 (+50%)
+Lot 2: 30 shares @ $11/share (Aug 20, 2025) - Short term
+  Cost: $330, Value: $450, Gain: $120 (+36.4%)
+Lot 3: 20 shares @ $11/share (Nov 10, 2025) - Short term
+  Cost: $220, Value: $300, Gain: $80 (+36.4%)
+
+Total: 100 shares, $1,050 cost basis
+Long-term lots: 1 (50 shares)
+Short-term lots: 2 (50 shares)
+```
+
+**Tax Optimization Insight**: If user sells 50 shares, selling Lot 1 first (FIFO) triggers long-term capital gains (lower tax rate).
+
 ```
 
 **Step 5: Store in Holdings Collection**
@@ -888,7 +982,17 @@ await firestore.collection('holdings').doc(holdingId).set(position)
 - Default view settings (dashboard layout)
 - Email notifications (on/off for various events)
 - Default account for new transactions
-- Portfolio calculation method (FIFO, LIFO, Avg Cost)
+- **Cost Basis Method** (Radio buttons):
+  - **Average Cost** (Default): Simple average of all purchases - matches brokerage statements
+  - **Tax Lot (FIFO)**: Track individual lots for tax optimization
+- **Show Tax Lot Details** (Toggle):
+  - When ON: Display tax lot breakdown in holdings view
+  - When OFF: Show only average cost summary
+  - Default: OFF
+- **Tax Lot Display Options** (when tax lot view enabled):
+  - Group by holding period (short-term vs long-term)
+  - Sort by purchase date, cost basis, or gain
+  - Highlight lots eligible for tax-loss harvesting
 
 ---
 

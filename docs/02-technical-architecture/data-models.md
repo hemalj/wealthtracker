@@ -76,7 +76,8 @@ interface User {
     numberFormat: string;            // '1,234.56' | '1.234,56'
     timezone: string;                // 'America/New_York'
     defaultAccountId: string | null;
-    costBasisMethod: 'FIFO' | 'LIFO' | 'AvgCost';
+    costBasisMethod: 'average_cost' | 'tax_lot_fifo';  // Default: 'average_cost'
+    showTaxLotView: boolean;         // Default: false (enable tax lot tracking view)
     enableEmailNotifications: boolean;
     enablePriceAlerts: boolean;
   };
@@ -487,10 +488,16 @@ transactions: [createdBy ASC, createdAt DESC]
 
 **Purpose**: Current portfolio positions (calculated from transactions)
 
-**Calculation Method**: Holdings are computed in real-time from transaction history using FIFO (First-In-First-Out) cost basis accounting. This collection serves as a **denormalized cache** for performance. Recalculation is triggered by transaction changes, price updates, or scheduled reconciliation jobs.
+**Calculation Method**: Holdings are computed in real-time from transaction history. This collection serves as a **denormalized cache** for performance. Recalculation is triggered by transaction changes, price updates, or scheduled reconciliation jobs.
+
+**Dual Cost Basis Support**: System maintains BOTH cost basis methods simultaneously:
+1. **Average Cost Basis** (Default): Simple average of all purchases - matches most brokerage statements
+2. **Tax Lot (FIFO) Basis**: Tracks individual purchase lots for tax optimization and accurate capital gains reporting
+
+Users can toggle between views in their profile settings. Tax lot tracking is always maintained internally for accurate realized gains calculation.
 
 **Detailed Calculation Logic**: See [Feature Specifications - Section 3.4: Position Calculation Logic](../01-business-requirements/feature-specifications.md#34-position-calculation-logic) for the complete algorithm including:
-- FIFO tax lot tracking
+- Both average cost and FIFO tax lot tracking
 - Stock split adjustments (forward/reverse with cash in lieu)
 - Realized vs unrealized gain calculations
 - Dividend income tracking
@@ -513,17 +520,39 @@ interface Holding {
 
   // Position
   quantity: number;                  // Current shares owned
-  costBasis: number;                 // Total cost basis (adjusted for splits)
-  avgCostPerShare: number;           // costBasis / quantity
 
-  // Current value
+  // Average Cost Basis (Default View)
+  avgCost: {
+    costBasis: number;               // Total cost basis / total shares
+    costPerShare: number;            // Simple average cost per share
+    unrealizedGain: number;          // marketValue - costBasis
+    unrealizedGainPercent: number;   // (unrealizedGain / costBasis) * 100
+  };
+
+  // Tax Lot Basis (FIFO - for tax optimization)
+  taxLots: Array<{
+    lotId: string;                   // Unique lot identifier
+    purchaseDate: Timestamp;         // Original purchase date
+    transactionId: string;           // Reference to buy transaction
+    quantity: number;                // Shares remaining in this lot
+    costBasis: number;               // Cost basis for this lot
+    costPerShare: number;            // Original cost per share (split-adjusted)
+    unrealizedGain: number;          // Current gain on this lot
+    holdingPeriod: 'short' | 'long'; // < 1 year or >= 1 year
+  }>;
+
+  // Tax lot summary
+  taxLotSummary: {
+    totalCostBasis: number;          // Sum of all lot cost bases
+    shortTermLots: number;           // Count of short-term lots
+    longTermLots: number;            // Count of long-term lots
+    oldestLotDate: Timestamp;        // Date of oldest lot (for holding period)
+  };
+
+  // Current value (common to both methods)
   currentPrice: number;              // Latest price from EODHD
   priceAsOf: Timestamp;              // When price was last updated
   marketValue: number;               // quantity * currentPrice
-
-  // Gains
-  unrealizedGain: number;            // marketValue - costBasis
-  unrealizedGainPercent: number;     // (unrealizedGain / costBasis) * 100
 
   // Performance
   totalReturn: number;               // Including realized + unrealized + dividends
