@@ -487,6 +487,14 @@ transactions: [createdBy ASC, createdAt DESC]
 
 **Purpose**: Current portfolio positions (calculated from transactions)
 
+**Calculation Method**: Holdings are computed in real-time from transaction history using FIFO (First-In-First-Out) cost basis accounting. This collection serves as a **denormalized cache** for performance. Recalculation is triggered by transaction changes, price updates, or scheduled reconciliation jobs.
+
+**Detailed Calculation Logic**: See [Feature Specifications - Section 3.4: Position Calculation Logic](../01-business-requirements/feature-specifications.md#34-position-calculation-logic) for the complete algorithm including:
+- FIFO tax lot tracking
+- Stock split adjustments (forward/reverse with cash in lieu)
+- Realized vs unrealized gain calculations
+- Dividend income tracking
+
 ### Document Structure
 
 ```typescript

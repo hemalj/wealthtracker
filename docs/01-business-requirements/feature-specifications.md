@@ -369,6 +369,320 @@ This document provides detailed functional specifications for all WealthTracker 
 
 ---
 
+### 3.4 Position Calculation Logic
+
+**Priority**: Must Have (MVP)
+
+**Description**: Explains how current portfolio positions (holdings) are calculated from transaction history using FIFO cost basis accounting.
+
+#### Overview
+
+Positions are **calculated in real-time** from transaction history, not stored separately. The Holdings collection acts as a **denormalized cache** for performance, but is always recalculated when transactions change.
+
+**Calculation Trigger Events**:
+- User creates/edits/deletes a transaction
+- Price data is updated (15-minute intervals during market hours)
+- User refreshes dashboard
+- Background job (nightly reconciliation)
+
+---
+
+#### FR-TRANS-301: Position Aggregation Algorithm
+
+**Step 1: Fetch All Transactions**
+- Query all transactions for the position (userId + accountId + symbol)
+- Sort by date ascending (oldest first)
+- Include: Initial Position, Buy, Sell, Dividend, Split (Forward/Reverse)
+
+**Step 2: Initialize Position**
+```typescript
+position = {
+  quantity: 0,
+  costBasis: 0,
+  avgCostPerShare: 0,
+  realizedGain: 0,
+  dividendIncome: 0,
+  taxLots: []  // FIFO queue of purchase lots
+}
+```
+
+**Step 3: Process Each Transaction Chronologically**
+
+**Initial Position Transaction**:
+```typescript
+// Creates opening position
+position.quantity += transaction.quantity
+position.costBasis += transaction.totalAmount
+position.taxLots.push({
+  transactionId: transaction.id,
+  date: transaction.date,
+  quantity: transaction.quantity,
+  costBasis: transaction.totalAmount,
+  costPerShare: transaction.unitPrice
+})
+```
+
+**Buy Transaction**:
+```typescript
+// Adds to position
+position.quantity += transaction.quantity
+position.costBasis += transaction.totalAmount + transaction.fees
+position.taxLots.push({
+  transactionId: transaction.id,
+  date: transaction.date,
+  quantity: transaction.quantity,
+  costBasis: transaction.totalAmount + transaction.fees,
+  costPerShare: (transaction.totalAmount + transaction.fees) / transaction.quantity
+})
+```
+
+**Sell Transaction (FIFO Method)**:
+```typescript
+// Removes shares using First-In-First-Out
+let remainingToSell = transaction.quantity
+let realizedGain = 0
+let totalCostBasis = 0
+
+while (remainingToSell > 0 && position.taxLots.length > 0) {
+  const lot = position.taxLots[0]  // Oldest lot first (FIFO)
+
+  if (lot.quantity <= remainingToSell) {
+    // Sell entire lot
+    totalCostBasis += lot.costBasis
+    realizedGain += (transaction.unitPrice * lot.quantity) - lot.costBasis
+    remainingToSell -= lot.quantity
+    position.taxLots.shift()  // Remove lot
+  } else {
+    // Partial lot sale
+    const soldFromLot = remainingToSell
+    const costBasisSold = lot.costPerShare * soldFromLot
+    totalCostBasis += costBasisSold
+    realizedGain += (transaction.unitPrice * soldFromLot) - costBasisSold
+
+    // Update remaining lot
+    lot.quantity -= soldFromLot
+    lot.costBasis -= costBasisSold
+    remainingToSell = 0
+  }
+}
+
+// Update position
+position.quantity -= transaction.quantity
+position.costBasis -= totalCostBasis
+position.realizedGain += realizedGain - transaction.fees
+
+// Store tax lot details in transaction for tax reporting
+transaction.taxLots = [...calculated tax lots]
+transaction.costBasis = totalCostBasis
+transaction.realizedGain = realizedGain - transaction.fees
+```
+
+**Dividend Transaction**:
+```typescript
+// Does not affect position quantity or cost basis
+position.dividendIncome += transaction.totalAmount
+```
+
+**Split Transaction - Forward** (e.g., 2:1 split):
+```typescript
+// Multiplies quantity, divides cost per share
+const multiplier = transaction.splitRatioMultiplier  // 2.0 for 2:1
+
+position.quantity *= multiplier
+// Cost basis stays the same (value doesn't change in split)
+
+// Adjust each tax lot
+position.taxLots.forEach(lot => {
+  lot.quantity *= multiplier
+  lot.costPerShare /= multiplier
+  // lot.costBasis stays the same
+})
+```
+
+**Split Transaction - Reverse** (e.g., 1:5 split):
+```typescript
+// Divides quantity (whole shares only), increases cost per share
+const multiplier = transaction.splitRatioMultiplier  // 0.2 for 1:5
+
+// Calculate new quantity (whole shares only)
+const oldQuantity = position.quantity
+const newQuantity = Math.floor(oldQuantity * multiplier)
+const fractionalShares = (oldQuantity * multiplier) - newQuantity
+
+position.quantity = newQuantity
+// Cost basis stays the same (value doesn't change in split)
+
+// Adjust each tax lot
+position.taxLots.forEach(lot => {
+  const oldLotQty = lot.quantity
+  lot.quantity = Math.floor(oldLotQty * multiplier)
+  lot.costPerShare /= multiplier
+  // lot.costBasis stays the same
+})
+
+// Handle fractional shares as cash in lieu
+if (fractionalShares > 0 && transaction.cashInLieu > 0) {
+  // Cash in lieu is treated as a partial sale at market price
+  // This reduces cost basis proportionally
+  const fractionalCostBasis = (fractionalShares / oldQuantity) * position.costBasis
+  position.costBasis -= fractionalCostBasis
+  position.realizedGain += transaction.cashInLieu - fractionalCostBasis
+}
+```
+
+**Step 4: Calculate Current Metrics**
+```typescript
+// Average cost per share
+position.avgCostPerShare = position.quantity > 0
+  ? position.costBasis / position.quantity
+  : 0
+
+// Market value (requires current price)
+position.marketValue = position.quantity * currentPrice
+
+// Unrealized gain
+position.unrealizedGain = position.marketValue - position.costBasis
+position.unrealizedGainPercent = (position.unrealizedGain / position.costBasis) * 100
+
+// Total return (realized + unrealized + dividends)
+position.totalReturn = position.realizedGain + position.unrealizedGain + position.dividendIncome
+position.totalReturnPercent = (position.totalReturn / (position.costBasis + Math.abs(position.realizedGain))) * 100
+```
+
+**Step 5: Store in Holdings Collection**
+```typescript
+// Save calculated position to holdings/{holdingId}
+await firestore.collection('holdings').doc(holdingId).set(position)
+```
+
+---
+
+#### FR-TRANS-302: Position Recalculation Rules
+
+**When to Recalculate**:
+1. **Immediate Recalculation** (real-time):
+   - After any transaction create/update/delete
+   - Recalculate affected symbol in affected account only
+   - Update Holdings document
+
+2. **Batch Recalculation** (scheduled):
+   - Nightly job recalculates all positions for data integrity
+   - Price updates trigger batch recalculation of all holdings
+   - Catches any missed updates or data inconsistencies
+
+3. **Manual Recalculation**:
+   - User-triggered refresh on dashboard
+   - Admin tool to recalculate specific user/account/symbol
+
+**Recalculation Performance**:
+- Target: < 100ms per position
+- Typical position: 10-50 transactions
+- Optimize by caching intermediate results
+- Use denormalized Holdings collection to avoid recalculation on every page load
+
+---
+
+#### FR-TRANS-303: Edge Cases & Validation
+
+**Short Position (Negative Quantity)**:
+- **Not Supported in MVP**: System validates quantity never goes negative
+- If sell quantity > position quantity, reject transaction with error
+- Error: "Cannot sell more shares than owned. Current position: {quantity}"
+
+**Wash Sale Tracking**:
+- **Not Supported in MVP**: No wash sale adjustments
+- Future feature: Track sells followed by buys within 30 days
+
+**Corporate Actions**:
+- **Supported**: Stock splits (forward/reverse with cash in lieu)
+- **Not Supported in MVP**: Mergers, spin-offs, rights offerings, tender offers
+- Future: Add transaction types for complex corporate actions
+
+**Partial Lot Sales**:
+- **Fully Supported**: FIFO algorithm handles partial lot sales
+- Remaining portion of lot stays in tax lot queue
+
+**Zero Position Cleanup**:
+- When position.quantity reaches 0, keep Holdings document with historical data
+- Set `isClosedPosition: true` flag
+- Allows reporting on closed positions and total realized gains
+- User can filter to show/hide closed positions
+
+---
+
+#### FR-TRANS-304: Tax Lot Reporting
+
+**Tax Lot Details** (for each sell transaction):
+- Transaction ID of original purchase (buy or initial position)
+- Purchase date
+- Quantity sold from this lot
+- Cost basis from this lot
+- Gain/loss from this lot
+- Holding period: "short" (< 1 year) or "long" (>= 1 year)
+
+**Example Tax Lot Data**:
+```json
+{
+  "transactionId": "sell_txn_123",
+  "transactionType": "sell",
+  "taxLots": [
+    {
+      "buyTransactionId": "buy_txn_001",
+      "purchaseDate": "2025-01-15",
+      "quantity": 30,
+      "costBasis": 4200.00,
+      "gain": 600.00,
+      "holdingPeriod": "long"
+    },
+    {
+      "buyTransactionId": "buy_txn_045",
+      "purchaseDate": "2025-08-20",
+      "quantity": 20,
+      "costBasis": 3100.00,
+      "gain": 400.00,
+      "holdingPeriod": "short"
+    }
+  ],
+  "totalCostBasis": 7300.00,
+  "totalRealizedGain": 1000.00
+}
+```
+
+**Use Cases**:
+- Tax reporting (Schedule D for capital gains)
+- Performance analysis by purchase cohort
+- Audit trail for cost basis
+- Tax loss harvesting opportunities
+
+---
+
+#### FR-TRANS-305: Acceptance Criteria
+
+**Correctness**:
+- Position quantity matches sum of all buys minus sells (adjusted for splits)
+- Cost basis calculated accurately using FIFO
+- Realized gains match FIFO lot assignments
+- Split adjustments maintain total cost basis
+
+**Performance**:
+- Recalculate position with 100 transactions in < 100ms
+- Dashboard loads with 50 positions in < 2 seconds
+- Real-time recalculation after transaction create/edit
+
+**Data Integrity**:
+- Positions always reconcile with transaction history
+- Nightly reconciliation job catches discrepancies
+- Alert admin if position calculation fails
+
+**Edge Cases Handled**:
+- Partial lot sales
+- Multiple splits on same symbol
+- Fractional shares in reverse splits (cash in lieu)
+- Same-day multiple transactions
+- Transactions out of chronological entry order (but processed chronologically)
+
+---
+
 ## 4. Account Management
 
 ### 4.1 Account CRUD
