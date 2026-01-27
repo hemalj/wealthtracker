@@ -453,7 +453,7 @@ interface Transaction {
   "realizedGain": null,
   "realizedGainPercent": null,
   "taxLots": null,
-  "notes": "1-for-5 reverse split. Had 127 shares, received 25 whole shares. 2 fractional shares paid as cash in lieu at $42.25/share = $84.50",
+  "notes": "1-for-5 reverse split. Had 127 old shares → 25 whole new shares + 0.4 fractional new shares. The 2 old shares that didn't convert to whole shares were paid as cash in lieu (0.4 new shares × $211.25/share = $84.50). Cost basis adjusted from original $1,270 to $1,250 for the 25 remaining shares.",
   "isDeleted": false,
   "deletedAt": null,
   "createdAt": "2026-02-15T09:00:00Z",

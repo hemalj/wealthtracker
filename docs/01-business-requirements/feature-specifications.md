@@ -237,13 +237,16 @@ This document provides detailed functional specifications for all WealthTracker 
 - Adjusts all historical costs
 
 **Split Transaction - Reverse**:
-- Example: 1:5 split (5 shares become 1)
-- Decreases quantity, increases cost basis proportionally
+- Example: 1:5 split (5 old shares become 1 new share)
+- Decreases quantity, increases cost per share proportionally
 - Ratio format: "1:5" (new:old)
 - **Fractional Share Handling**: Only whole shares are recorded; fractional portions are paid as cash in lieu
-- **Cash in Lieu Calculation**: Fractional share quantity × market price at split date
-- Cash in lieu amount is recorded in the transaction notes or as a separate field
-- Adjusts all historical costs
+- **Cost Basis Adjustment**: Cost basis only includes the shares that convert to whole shares
+  - Example: 27 shares at $10 avg cost = $270 → becomes 5 shares at $50 avg cost = $250
+  - The 2 old shares ($20 cost basis) that don't convert to whole shares are treated as a disposal
+- **Cash in Lieu Calculation**: Fractional new shares × market price at split date
+- Cash in lieu is treated as a sale of the fractional portion
+- Realized gain/loss = cash received - cost basis of fractional portion
 
 **FR-TRANS-003**: Symbol Autocomplete
 - Search symbols as user types (min 1 char)
@@ -507,28 +510,98 @@ const multiplier = transaction.splitRatioMultiplier  // 0.2 for 1:5
 // Calculate new quantity (whole shares only)
 const oldQuantity = position.quantity
 const newQuantity = Math.floor(oldQuantity * multiplier)
-const fractionalShares = (oldQuantity * multiplier) - newQuantity
+const fractionalNewShares = (oldQuantity * multiplier) - newQuantity
+
+// CRITICAL: Calculate how many OLD shares don't convert to whole NEW shares
+// These OLD shares are paid as cash in lieu
+const oldSharesConverted = newQuantity / multiplier  // Whole old shares that convert
+const oldSharesNotConverted = oldQuantity - oldSharesConverted  // Fractional old shares
 
 position.quantity = newQuantity
-// Cost basis stays the same (value doesn't change in split)
 
-// Adjust each tax lot
+// IMPORTANT: Cost basis adjustment
+// Only the cost basis of shares that convert to whole shares remains
+// The cost basis of fractional shares is removed (treated as a disposal)
+const fractionalCostBasis = (oldSharesNotConverted / oldQuantity) * position.costBasis
+position.costBasis -= fractionalCostBasis
+
+// Adjust each tax lot proportionally
 position.taxLots.forEach(lot => {
   const oldLotQty = lot.quantity
-  lot.quantity = Math.floor(oldLotQty * multiplier)
-  lot.costPerShare /= multiplier
-  // lot.costBasis stays the same
+  const newLotQty = Math.floor(oldLotQty * multiplier)
+  const oldLotSharesConverted = newLotQty / multiplier
+  const oldLotSharesNotConverted = oldLotQty - oldLotSharesConverted
+
+  // Reduce lot cost basis by the fractional portion
+  const lotFractionalCostBasis = (oldLotSharesNotConverted / oldLotQty) * lot.costBasis
+  lot.costBasis -= lotFractionalCostBasis
+  lot.quantity = newLotQty
+  lot.costPerShare = lot.costBasis / lot.quantity  // Recalculate
 })
 
-// Handle fractional shares as cash in lieu
-if (fractionalShares > 0 && transaction.cashInLieu > 0) {
-  // Cash in lieu is treated as a partial sale at market price
-  // This reduces cost basis proportionally
-  const fractionalCostBasis = (fractionalShares / oldQuantity) * position.costBasis
-  position.costBasis -= fractionalCostBasis
-  position.realizedGain += transaction.cashInLieu - fractionalCostBasis
+// Handle cash in lieu as a disposal (partial sale)
+if (oldSharesNotConverted > 0 && transaction.cashInLieu > 0) {
+  // Cash in lieu is treated as a sale of fractional shares
+  // Realized gain = cash received - cost basis of fractional shares
+  const realizedGainOnFractional = transaction.cashInLieu - fractionalCostBasis
+  position.realizedGain += realizedGainOnFractional
 }
 ```
+
+**Example: 1:5 Reverse Split**
+```
+Before Split:
+  - 27 shares at $10/share average cost
+  - Cost basis: $270
+  - Total value: $270
+
+Reverse Split (1:5 = 5 old shares become 1 new share):
+  - 27 old shares ÷ 5 = 5.4 new shares
+  - Whole shares: 5 new shares
+  - Fractional: 0.4 new shares (represents 2 old shares)
+
+Shares that convert to whole shares:
+  - 25 old shares → 5 new shares
+  - Cost basis: $250 (25 × $10)
+
+Fractional shares (paid as cash in lieu):
+  - 2 old shares → 0.4 new fractional shares
+  - Cost basis: $20 (2 × $10)
+  - Cash in lieu: 0.4 new shares × $50/share = $20 (if market price is $50/share)
+  - Realized gain: $20 - $20 = $0
+
+After Split:
+  - 5 shares at $50/share average cost
+  - Cost basis: $250 (NOT $270!)
+  - Total value: $250
+  - Realized gain from cash in lieu: $0
+```
+
+**🚨 CRITICAL IMPLEMENTATION NOTE: Reverse Split Cost Basis**
+
+The cost basis after a reverse split must ONLY include shares that convert to whole shares. Do NOT use the full original cost basis.
+
+**Incorrect Approach** ❌:
+```typescript
+// WRONG: This keeps the full cost basis
+position.quantity = 5
+position.costBasis = 270  // ❌ WRONG!
+position.avgCostPerShare = 270 / 5 = 54  // ❌ Incorrect!
+```
+
+**Correct Approach** ✅:
+```typescript
+// RIGHT: Cost basis adjusted for fractional shares removed
+const oldSharesNotConverted = 2  // These don't become whole shares
+const fractionalCostBasis = (2 / 27) * 270 = 20
+position.costBasis = 270 - 20 = 250  // ✅ Correct!
+position.quantity = 5
+position.avgCostPerShare = 250 / 5 = 50  // ✅ Correct!
+```
+
+**Why this matters**: The fractional shares (2 old shares) are disposed of via cash in lieu payment, so their cost basis must be removed from the position. Keeping the full $270 cost basis would overstate the cost basis and understate gains when the position is eventually sold.
+
+---
 
 **Step 4: Calculate Current Metrics**
 ```typescript
