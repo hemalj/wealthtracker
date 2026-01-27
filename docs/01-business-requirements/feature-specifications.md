@@ -240,6 +240,9 @@ This document provides detailed functional specifications for all WealthTracker 
 - Example: 1:5 split (5 shares become 1)
 - Decreases quantity, increases cost basis proportionally
 - Ratio format: "1:5" (new:old)
+- **Fractional Share Handling**: Only whole shares are recorded; fractional portions are paid as cash in lieu
+- **Cash in Lieu Calculation**: Fractional share quantity × market price at split date
+- Cash in lieu amount is recorded in the transaction notes or as a separate field
 - Adjusts all historical costs
 
 **FR-TRANS-003**: Symbol Autocomplete

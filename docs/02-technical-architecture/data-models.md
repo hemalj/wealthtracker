@@ -264,6 +264,7 @@ interface Transaction {
   // Split details (only for split transactions)
   splitRatio: string | null;         // "2:1" (new:old) for forward, "1:5" for reverse
   splitRatioMultiplier: number | null; // 2.0 for 2:1, 0.2 for 1:5
+  cashInLieu: number | null;         // Cash paid for fractional shares (reverse splits only)
 
   // Calculated fields (for sells)
   costBasis: number | null;          // Original cost of sold shares (FIFO)
@@ -414,6 +415,7 @@ interface Transaction {
   "fees": 0.00,
   "splitRatio": "4:1",
   "splitRatioMultiplier": 4.0,
+  "cashInLieu": null,
   "costBasis": null,
   "realizedGain": null,
   "realizedGainPercent": null,
@@ -423,6 +425,39 @@ interface Transaction {
   "deletedAt": null,
   "createdAt": "2025-08-01T09:00:00Z",
   "updatedAt": "2025-08-01T09:00:00Z",
+  "createdBy": "abc123xyz"
+}
+```
+
+**Reverse Split Transaction**:
+```json
+{
+  "transactionId": "txn_031",
+  "userId": "abc123xyz",
+  "accountId": "acc_001",
+  "transactionType": "split_reverse",
+  "date": "2026-02-15T00:00:00Z",
+  "symbol": "TSLA",
+  "symbolId": "sym_tsla_nasdaq",
+  "symbolName": "Tesla Inc.",
+  "exchange": "NASDAQ",
+  "currency": "USD",
+  "quantity": null,
+  "unitPrice": null,
+  "totalAmount": 0.00,
+  "fees": 0.00,
+  "splitRatio": "1:5",
+  "splitRatioMultiplier": 0.2,
+  "cashInLieu": 84.50,
+  "costBasis": null,
+  "realizedGain": null,
+  "realizedGainPercent": null,
+  "taxLots": null,
+  "notes": "1-for-5 reverse split. Had 127 shares, received 25 whole shares. 2 fractional shares paid as cash in lieu at $42.25/share = $84.50",
+  "isDeleted": false,
+  "deletedAt": null,
+  "createdAt": "2026-02-15T09:00:00Z",
+  "updatedAt": "2026-02-15T09:00:00Z",
   "createdBy": "abc123xyz"
 }
 ```
