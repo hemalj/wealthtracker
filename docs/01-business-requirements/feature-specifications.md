@@ -390,41 +390,63 @@ Positions are **calculated in real-time** from transaction history, not stored s
 
 ---
 
-#### Dual Cost Basis Methods
+#### Cost Basis Methods (MVP vs Post-MVP)
 
-**The system supports TWO cost basis calculation methods simultaneously:**
+**The system supports TWO cost basis calculation methods:**
 
-1. **Average Cost Basis** (Default)
-   - **What it is**: Simple average of all purchase costs
-   - **Formula**: Total cost basis ÷ Total shares = Average cost per share
-   - **When to use**: Matches most brokerage statements, easier to understand
-   - **Example**: Buy 100 @ $10, Buy 50 @ $12 → Avg cost = ($1000 + $600) / 150 = $10.67/share
+### 1. Average Cost Basis (MVP - Always Enabled)
 
-2. **Tax Lot Basis (FIFO)**
-   - **What it is**: Tracks each purchase as a separate lot, sells use First-In-First-Out
-   - **When to use**: Tax optimization, accurate capital gains reporting, Schedule D
-   - **Example**: Same purchases tracked as Lot 1 (100 @ $10) and Lot 2 (50 @ $12)
+**Priority**: Must Have (MVP)
+
+- **What it is**: Simple average of all purchase costs
+- **Formula**: Total cost basis ÷ Total shares = Average cost per share
+- **Computation**: Lightweight, minimal overhead
+- **Storage**: Low - just 4 fields per holding
+- **Example**: Buy 100 @ $10, Buy 50 @ $12 → Avg cost = ($1000 + $600) / 150 = $10.67/share
+- **Target Users**: 90% of investors (casual investors, long-term holders)
+
+**Why MVP?**
+- Matches what users see in brokerage statements
+- Simple to understand and explain
+- Low computational overhead
+- Sufficient for most investment tracking needs
+- Fast dashboard performance
+
+### 2. Tax Lot (FIFO) Basis (Post-MVP - Opt-In Feature)
+
+**Priority**: Should Have (Post-MVP, Months 5-7)
+
+- **What it is**: Tracks each purchase as a separate lot, sells use First-In-First-Out
+- **Computation**: Heavy - requires 3-5x more processing
+- **Storage**: High - stores array of lots per holding (10-50 lots typical)
+- **Example**: Same purchases tracked as Lot 1 (100 @ $10) and Lot 2 (50 @ $12)
+- **Target Users**: Power users, tax-conscious investors, accountants
+
+**Why Post-MVP & Opt-In?**
+- **Resource Optimization**: Only compute for users who need it
+- **Cost Management**: Tax lot tracking uses 3-5x more storage and compute
+- **User Segmentation**: Most casual investors don't need this complexity
+- **Performance**: Keep system fast for majority of users
+
+**Opt-In Mechanism:**
+- User enables `preferences.enableTaxLotTracking = true` in Settings
+- System begins calculating and storing tax lots for that user
+- Previous transactions are processed to generate historical lots
+- User can disable anytime (tax lot data preserved but not updated)
 
 **Key Differences:**
 
-| Aspect | Average Cost | Tax Lot (FIFO) |
-|--------|--------------|----------------|
+| Aspect | Average Cost (MVP) | Tax Lot FIFO (Post-MVP) |
+|--------|-------------------|-------------------------|
+| **Phase** | ✅ MVP | 🔄 Post-MVP (Months 5-7) |
+| **Enabled By** | Default (all users) | Opt-in (power users only) |
 | **Calculation** | Simple average | Tracks individual lots |
-| **Realized Gains** | Uses average cost | Uses actual lot costs |
-| **Tax Reporting** | Approximate | Precise |
-| **Complexity** | Simple | More complex |
-| **Use Case** | Quick overview | Tax optimization |
-
-**User Preference:**
-- Users can set `preferences.costBasisMethod` = `'average_cost'` or `'tax_lot_fifo'`
-- Users can toggle `preferences.showTaxLotView` = `true` to see tax lot details
-- Default: Average cost view
-- System always maintains tax lot data internally for accurate realized gains
-
-**Why Both?**
-- **Average Cost**: Easier for users to understand, matches brokerage statements
-- **Tax Lot**: Required for accurate tax reporting and tax optimization strategies
-- Users can switch between views based on their needs
+| **Computation** | Lightweight | Heavy (3-5x overhead) |
+| **Storage** | Low | High (arrays of lots) |
+| **Realized Gains** | Approximate | Precise FIFO |
+| **Tax Reporting** | Approximate | Schedule D ready |
+| **Use Case** | Daily tracking | Tax optimization |
+| **Target Users** | 90% of users | 10% power users |
 
 ---
 
@@ -978,21 +1000,31 @@ await firestore.collection('holdings').doc(holdingId).set(position)
 - Change Password (for email/password users)
 - Delete Account (with confirmation)
 
-**FR-SETTINGS-002**: Preferences
+**FR-SETTINGS-002**: Preferences (MVP)
 - Default view settings (dashboard layout)
 - Email notifications (on/off for various events)
 - Default account for new transactions
-- **Cost Basis Method** (Radio buttons):
-  - **Average Cost** (Default): Simple average of all purchases - matches brokerage statements
-  - **Tax Lot (FIFO)**: Track individual lots for tax optimization
-- **Show Tax Lot Details** (Toggle):
-  - When ON: Display tax lot breakdown in holdings view
-  - When OFF: Show only average cost summary
-  - Default: OFF
-- **Tax Lot Display Options** (when tax lot view enabled):
+
+**FR-SETTINGS-003**: Tax Lot Tracking (Post-MVP)
+
+**Priority**: Should Have (Post-MVP, Months 5-7)
+
+- **Enable Tax Lot Tracking** (Toggle, opt-in feature):
+  - When OFF (Default): Only average cost basis calculated
+  - When ON: System calculates and stores individual tax lots (FIFO)
+  - **Warning**: "Enabling this feature increases storage and computation. Best for power users who need tax optimization."
+  - **Note**: "Your transaction history will be processed to generate tax lots. This may take a few minutes."
+
+- **Tax Lot Display Options** (only shown when tax lot tracking is enabled):
   - Group by holding period (short-term vs long-term)
-  - Sort by purchase date, cost basis, or gain
+  - Sort by purchase date, cost basis, or unrealized gain
   - Highlight lots eligible for tax-loss harvesting
+  - Show/hide long-term lots (>1 year holding period)
+  - Export tax lots to CSV for tax filing
+
+- **Disable Tax Lot Tracking**:
+  - Confirmation dialog: "Tax lot data will be preserved but not updated. You can re-enable anytime."
+  - User can re-enable later and system resumes from last calculation
 
 ---
 

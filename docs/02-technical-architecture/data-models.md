@@ -76,8 +76,7 @@ interface User {
     numberFormat: string;            // '1,234.56' | '1.234,56'
     timezone: string;                // 'America/New_York'
     defaultAccountId: string | null;
-    costBasisMethod: 'average_cost' | 'tax_lot_fifo';  // Default: 'average_cost'
-    showTaxLotView: boolean;         // Default: false (enable tax lot tracking view)
+    enableTaxLotTracking: boolean;   // Default: false (Post-MVP feature, opt-in for power users)
     enableEmailNotifications: boolean;
     enablePriceAlerts: boolean;
   };
@@ -490,14 +489,29 @@ transactions: [createdBy ASC, createdAt DESC]
 
 **Calculation Method**: Holdings are computed in real-time from transaction history. This collection serves as a **denormalized cache** for performance. Recalculation is triggered by transaction changes, price updates, or scheduled reconciliation jobs.
 
-**Dual Cost Basis Support**: System maintains BOTH cost basis methods simultaneously:
-1. **Average Cost Basis** (Default): Simple average of all purchases - matches most brokerage statements
-2. **Tax Lot (FIFO) Basis**: Tracks individual purchase lots for tax optimization and accurate capital gains reporting
+**Cost Basis Tracking**:
 
-Users can toggle between views in their profile settings. Tax lot tracking is always maintained internally for accurate realized gains calculation.
+1. **Average Cost Basis** (MVP - Always Enabled):
+   - Simple average of all purchases
+   - Lower computational overhead
+   - Matches most brokerage statements
+   - Sufficient for 90% of users
+
+2. **Tax Lot (FIFO) Basis** (Post-MVP - Opt-In):
+   - Tracks individual purchase lots for tax optimization
+   - Higher computational overhead and storage requirements
+   - Only calculated when user enables `preferences.enableTaxLotTracking`
+   - Targeted at power users who need tax optimization
+
+**Why Opt-In Tax Lot Tracking?**
+- **Resource Optimization**: Tax lot tracking requires ~3-5x more storage and computation
+- **User Segmentation**: Most casual investors don't need detailed tax lot tracking
+- **Cost Management**: Only incur extra costs for users who need the feature
+- **Performance**: Keeps system fast for majority of users
 
 **Detailed Calculation Logic**: See [Feature Specifications - Section 3.4: Position Calculation Logic](../01-business-requirements/feature-specifications.md#34-position-calculation-logic) for the complete algorithm including:
-- Both average cost and FIFO tax lot tracking
+- Average cost calculation (MVP)
+- FIFO tax lot tracking (Post-MVP, opt-in)
 - Stock split adjustments (forward/reverse with cash in lieu)
 - Realized vs unrealized gain calculations
 - Dividend income tracking
@@ -521,7 +535,7 @@ interface Holding {
   // Position
   quantity: number;                  // Current shares owned
 
-  // Average Cost Basis (Default View)
+  // Average Cost Basis (MVP - Always Enabled)
   avgCost: {
     costBasis: number;               // Total cost basis / total shares
     costPerShare: number;            // Simple average cost per share
@@ -529,8 +543,9 @@ interface Holding {
     unrealizedGainPercent: number;   // (unrealizedGain / costBasis) * 100
   };
 
-  // Tax Lot Basis (FIFO - for tax optimization)
-  taxLots: Array<{
+  // Tax Lot Basis (Post-MVP - Only if user enables tax lot tracking)
+  // This field is ONLY present when preferences.enableTaxLotTracking = true
+  taxLots?: Array<{
     lotId: string;                   // Unique lot identifier
     purchaseDate: Timestamp;         // Original purchase date
     transactionId: string;           // Reference to buy transaction
@@ -541,8 +556,8 @@ interface Holding {
     holdingPeriod: 'short' | 'long'; // < 1 year or >= 1 year
   }>;
 
-  // Tax lot summary
-  taxLotSummary: {
+  // Tax lot summary (only present when taxLots is enabled)
+  taxLotSummary?: {
     totalCostBasis: number;          // Sum of all lot cost bases
     shortTermLots: number;           // Count of short-term lots
     longTermLots: number;            // Count of long-term lots
