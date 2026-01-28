@@ -210,9 +210,19 @@ This document provides detailed functional specifications for all WealthTracker 
 **FR-TRANS-002**: Transaction Type Logic
 
 **Initial Position**:
-- Used when starting to track existing holdings
+- Used when starting to track existing holdings from a specific point in time
 - Requires: Symbol, Quantity, Unit Price (avg cost), Date, Account
 - Creates position without affecting cash balance
+- **CRITICAL**: Initial Position takes **absolute priority** over BUY transactions
+  - Any BUY transactions dated **on or before** the Initial Position date are **IGNORED** for cost basis calculations
+  - Only BUY transactions **after** the Initial Position date are included in cost basis
+  - Initial Position represents the "starting point" with known quantity and average cost
+  - Example:
+    - BUY 50 shares on Jan 1 @ $100 (ignored)
+    - BUY 30 shares on Jan 5 @ $110 (ignored)
+    - **INITIAL POSITION**: 100 shares on Jan 10 @ $105 (this is the starting point)
+    - BUY 20 shares on Jan 15 @ $108 (included)
+    - **Result**: Position = 120 shares with cost basis based only on Initial Position (100 @ $105) + Jan 15 BUY (20 @ $108)
 
 **Buy Transaction**:
 - Increases position quantity
@@ -459,8 +469,41 @@ Positions are **calculated in real-time** from transaction history, not stored s
 - Query all transactions for the position (userId + accountId + symbol)
 - Sort by date ascending (oldest first)
 - Include: Initial Position, Buy, Sell, Dividend, Split (Forward/Reverse)
+- **CRITICAL**: Identify the most recent Initial Position transaction (if any)
 
-**Step 2: Initialize Position**
+**Step 2: Apply Initial Position Priority Rule**
+
+**CRITICAL RULE**: Initial Position takes **absolute priority** over BUY transactions.
+
+```typescript
+// Find the most recent Initial Position transaction for this symbol
+const initialPosition = transactions.find(
+  t => t.transactionType === 'initial_position'
+).sort((a, b) => b.date - a.date)[0];  // Most recent if multiple
+
+if (initialPosition) {
+  // Filter out ALL BUY transactions on or before Initial Position date
+  transactions = transactions.filter(t => {
+    if (t.transactionType === 'buy' && t.date <= initialPosition.date) {
+      return false;  // IGNORE this buy transaction
+    }
+    return true;  // Keep all other transactions
+  });
+}
+```
+
+**Why This Rule Exists:**
+- Initial Position represents the "starting point" when you begin tracking
+- It already includes the average cost of all prior purchases
+- Including prior BUY transactions would double-count shares and cost basis
+- Example:
+  - Jan 1: BUY 50 @ $100 (ignored)
+  - Jan 5: BUY 30 @ $110 (ignored)
+  - **Jan 10: INITIAL POSITION 100 @ $105** ← This is the reset point
+  - Jan 15: BUY 20 @ $108 (included)
+  - **Result**: Position = 120 shares (100 from Initial + 20 from Jan 15 buy)
+
+**Step 3: Initialize Position**
 ```typescript
 position = {
   quantity: 0,
@@ -472,11 +515,12 @@ position = {
 }
 ```
 
-**Step 3: Process Each Transaction Chronologically**
+**Step 4: Process Each Transaction Chronologically**
 
 **Initial Position Transaction**:
 ```typescript
-// Creates opening position
+// Creates opening position (resets cost basis to known starting point)
+// All BUY transactions on or before this date have been filtered out
 position.quantity += transaction.quantity
 position.costBasis += transaction.totalAmount
 position.taxLots.push({

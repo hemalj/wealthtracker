@@ -525,6 +525,7 @@ transactions: [createdBy ASC, createdAt DESC]
 - **Performance**: Keeps system fast for majority of users
 
 **Detailed Calculation Logic**: See [Feature Specifications - Section 3.4: Position Calculation Logic](../01-business-requirements/feature-specifications.md#34-position-calculation-logic) for the complete algorithm including:
+- **Initial Position priority rule** (CRITICAL: Initial Position ignores BUY transactions on or before its date)
 - Average cost calculation (MVP)
 - FIFO tax lot tracking (Post-MVP, opt-in)
 - Stock split adjustments (forward/reverse with cash in lieu)
