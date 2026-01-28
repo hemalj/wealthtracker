@@ -115,6 +115,37 @@ This document details all technologies, libraries, tools, and services used in W
   }
   ```
 
+**Feature Flags System (Custom Implementation)**
+- **Purpose**: Dynamic feature enable/disable without code deployment
+- **Why**: Gradual rollouts, emergency kill switches, beta testing, A/B testing
+- **Implementation**: Custom React hook + Firestore real-time listeners
+- **Use Cases**: Feature rollouts, emergency disables, beta user targeting
+- **Storage**: Firestore `feature_flags` collection + per-user overrides
+- **Example**:
+  ```typescript
+  import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+
+  function TransactionImportButton() {
+    const isEnabled = useFeatureFlag('transactions.csv_import.enabled', true);
+
+    if (!isEnabled) return null; // Feature disabled
+
+    return <Button onClick={handleImport}>Import CSV</Button>;
+  }
+  ```
+- **Features**:
+  - Global on/off switches
+  - Percentage-based rollouts (e.g., enable for 25% of users)
+  - Per-user overrides for beta testing
+  - Real-time updates via Firestore listeners (<5 seconds)
+  - Admin UI for flag management
+  - Audit trail for all changes
+  - Emergency kill switch
+- **Alternatives**: LaunchDarkly (expensive, $8/seat/month), Split.io, Optimizely, ConfigCat
+- **Why Custom**: Free, full control, integrated with Firestore, no external dependencies
+- **License**: Custom (part of application code)
+- **Documentation**: See [Feature Flags Specification](../../01-business-requirements/FEATURE_FLAGS_SPECIFICATION.md)
+
 ---
 
 ### Routing

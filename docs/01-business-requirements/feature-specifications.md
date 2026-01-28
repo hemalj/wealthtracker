@@ -185,11 +185,18 @@ This document provides detailed functional specifications for all WealthTracker 
 
 ## 3. Transaction Management
 
-### 3.1 Transaction CRUD
+### 3.1 Bulk CSV Import (Primary Transaction Method)
 
 **Priority**: Must Have (MVP)
 
-**Description**: Create, read, update, delete investment transactions.
+**Description**: Bulk CSV import is the **primary method** for adding transactions in MVP. Users can import their transaction history from broker statements or spreadsheets, enabling quick onboarding with years of historical data.
+
+**Rationale for MVP**:
+- Most users have historical transaction data from brokers (CSV exports)
+- Onboarding users with existing portfolios is critical for adoption
+- Entering hundreds of historical transactions manually is impractical
+- Bulk import provides immediate value (vs. manual entry being tedious)
+- Users can export from Fidelity/Schwab/Interactive Brokers and import directly
 
 **FR-TRANS-001**: Create Transaction
 - Form fields:
@@ -1452,6 +1459,137 @@ MSFT.US,2026-01-27,380.00,385.00,378.50,383.25,23456789,383.25
 **⚠️ IMPORTANT NOTE**: This is a **temporary development feature**. It will be replaced by automated EODHD price fetching in Post-MVP phase. Do not build complex UI around this feature.
 
 **Development Priority**: Implement early in MVP (Month 1-2) to enable development and testing without incurring EODHD API costs.
+
+---
+
+### 7.5 Feature Flags System
+
+**Priority**: Should Have (Month 4 or Post-MVP Month 5)
+
+**Description**: Admin-controlled feature flags to dynamically enable/disable features without deploying code. Provides flexibility for gradual rollouts, emergency kill switches, beta testing, and A/B testing.
+
+**For detailed specification, see**: [FEATURE_FLAGS_SPECIFICATION.md](FEATURE_FLAGS_SPECIFICATION.md)
+
+**Use Cases**:
+- **Gradual Rollout**: Release features to 10% → 25% → 50% → 100% of users
+- **Kill Switch**: Immediately disable problematic features
+- **Beta Testing**: Enable experimental features for specific users
+- **Maintenance Mode**: Disable writes during maintenance
+- **Emergency Response**: Quickly disable resource-intensive features under load
+
+**FR-ADMIN-401**: Feature Flags Dashboard
+
+**Components**:
+- List all feature flags with status (enabled/disabled)
+- Filter by category (core, experimental, beta, deprecated)
+- Search by feature name or flag ID
+- Quick toggle switches with confirmation dialogs
+- Change history for each flag (who, when, why)
+
+**FR-ADMIN-402**: Toggle Feature Flag
+
+**Workflow**:
+1. Admin clicks toggle switch
+2. Confirmation dialog: "Enable [Feature]? This will affect X users"
+3. Reason input field (required): "Why are you enabling/disabling this?"
+4. System updates flag, logs change, invalidates cache
+5. All clients receive update via Firestore listener within 5 seconds
+
+**FR-ADMIN-403**: Gradual Rollout Management
+
+**Features**:
+- Percentage slider: Enable for X% of users (0-100%)
+- User targeting: Hash-based consistent rollout
+- Estimated users affected display
+- Rollout history and current percentage
+- "Increase by 10%" quick action button
+
+**FR-ADMIN-404**: Beta User Management
+
+**Features**:
+- Add/remove specific users for beta testing
+- User search by email or ID
+- Per-user feature overrides
+- Expiration dates for beta access (optional)
+- Email notification to beta users (optional)
+
+**FR-ADMIN-405**: Emergency Kill Switch
+
+**Features**:
+- "Emergency Disable" button (red, prominent)
+- Fast confirmation (skip reason for emergencies)
+- Instant flag disable (<2 seconds)
+- Alert sent to admin team (Slack/email)
+- Automatic incident creation in monitoring system
+
+**Feature Flag Examples**:
+
+**Core Features (MVP)**:
+- `transactions.csv_import.enabled` - Enable/disable CSV import
+- `dashboard.realtime_prices.enabled` - Enable/disable real-time prices
+- `admin.manual_price_updates.enabled` - Enable/disable manual price upload
+- `calculators.compound_interest.enabled` - Enable/disable calculator
+
+**Experimental Features (Post-MVP)**:
+- `transactions.manual_form.enabled` - Enable/disable single transaction form
+- `transactions.bulk_edit.enabled` - Enable/disable bulk editing
+- `reports.performance.enabled` - Enable/disable performance analytics
+- `notifications.email.enabled` - Enable/disable email notifications
+
+**Emergency/Maintenance Flags**:
+- `system.maintenance_mode.enabled` - Show maintenance banner, disable writes
+- `system.read_only_mode.enabled` - Disable all writes
+- `performance.heavy_operations.enabled` - Allow/block resource-intensive operations
+
+**Client-Side Integration**:
+
+```typescript
+// React Hook usage
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+
+function TransactionImportButton() {
+  const isCsvImportEnabled = useFeatureFlag('transactions.csv_import.enabled', true);
+
+  if (!isCsvImportEnabled) {
+    return null; // Feature disabled, hide button
+  }
+
+  return <Button onClick={handleImport}>Import CSV</Button>;
+}
+```
+
+**Data Model**:
+
+```typescript
+interface FeatureFlag {
+  flagId: string;                    // e.g., "transactions.csv_import.enabled"
+  name: string;                      // Human-readable name
+  description: string;               // What this controls
+  enabled: boolean;                  // Global on/off
+  rolloutPercentage: number;         // 0-100
+  allowedUserIds: string[];          // Beta testers
+  blockedUserIds: string[];          // Excluded users
+  allowedEnvironments: string[];     // ['development', 'staging', 'production']
+  changeHistory: FlagChangeEvent[];  // Audit trail
+  expiresAt: Timestamp | null;       // Optional expiration
+}
+```
+
+**Acceptance Criteria**:
+- ✅ Admin can toggle any feature on/off with reason
+- ✅ Changes propagate to all clients within 5 seconds
+- ✅ User-level overrides work correctly for beta testing
+- ✅ Rollout percentage targeting accurate to ±2%
+- ✅ Disabled features completely hidden from UI
+- ✅ Emergency kill switch works instantly (<2 seconds)
+- ✅ All changes logged with timestamp, admin, and reason
+- ✅ Only admins can modify flags
+- ✅ Feature flag checks complete in <50ms client-side
+
+**Development Strategy**:
+- **Month 2 Week 1**: Set up basic feature flag system and React hook
+- **Month 4 Week 2 or Post-MVP Month 5**: Build admin UI for flag management
+- **Post-MVP**: Add advanced targeting, analytics, and scheduled changes
 
 ---
 
