@@ -1611,6 +1611,13 @@ MSFT.US,2026-01-27,380.00,385.00,378.50,383.25,23456789,383.25
 - **Maintenance Mode**: Disable writes during maintenance
 - **Emergency Response**: Quickly disable resource-intensive features under load
 
+**Feature Flag Types**:
+
+1. **Global Feature Flags**: On/off switches affecting all users
+2. **User-Level Feature Flags**: Per-user overrides for beta testing (stored in `users/{userId}/feature_overrides`)
+3. **Percentage Rollout Flags**: Enable for X% of users using hash-based consistent rollout (`hash(userId) % 100 < percentage`)
+4. **Environment-Based Flags**: Different states for dev/staging/prod
+
 **FR-ADMIN-401**: Feature Flags Dashboard
 
 **Components**:
@@ -1656,24 +1663,47 @@ MSFT.US,2026-01-27,380.00,385.00,378.50,383.25,23456789,383.25
 - Alert sent to admin team (Slack/email)
 - Automatic incident creation in monitoring system
 
-**Feature Flag Examples**:
+**Complete Feature Flags List**:
 
-**Core Features (MVP)**:
-- `transactions.csv_import.enabled` - Enable/disable CSV import
-- `dashboard.realtime_prices.enabled` - Enable/disable real-time prices
-- `admin.manual_price_updates.enabled` - Enable/disable manual price upload
-- `calculators.compound_interest.enabled` - Enable/disable calculator
+**Core Features (MVP)** - Default: Enabled
 
-**Experimental Features (Post-MVP)**:
-- `transactions.manual_form.enabled` - Enable/disable single transaction form
-- `transactions.bulk_edit.enabled` - Enable/disable bulk editing
-- `reports.performance.enabled` - Enable/disable performance analytics
-- `notifications.email.enabled` - Enable/disable email notifications
+| Flag ID | Name | Description |
+|---------|------|-------------|
+| `auth.google_oauth.enabled` | Google OAuth | Enable Google sign-in |
+| `auth.email_password.enabled` | Email/Password Auth | Enable email/password sign-in |
+| `accounts.create.enabled` | Create Accounts | Enable account creation |
+| `accounts.delete.enabled` | Delete Accounts | Enable account deletion |
+| `transactions.csv_import.enabled` | CSV Import | Enable bulk CSV import |
+| `transactions.delete.enabled` | Delete Transactions | Enable transaction deletion |
+| `transactions.export.enabled` | Export Transactions | Enable CSV export |
+| `dashboard.enabled` | Dashboard | Enable portfolio dashboard |
+| `dashboard.realtime_prices.enabled` | Real-Time Prices | Enable live price updates |
+| `calculators.simple_interest.enabled` | Simple Interest Calculator | Enable calculator |
+| `calculators.compound_interest.enabled` | Compound Interest Calculator | Enable calculator |
+| `admin.symbol_management.enabled` | Symbol Management | Enable admin symbol CRUD |
+| `admin.manual_price_updates.enabled` | Manual Price Updates | Enable manual price upload |
 
-**Emergency/Maintenance Flags**:
-- `system.maintenance_mode.enabled` - Show maintenance banner, disable writes
-- `system.read_only_mode.enabled` - Disable all writes
-- `performance.heavy_operations.enabled` - Allow/block resource-intensive operations
+**Experimental Features (Post-MVP)** - Default: Disabled
+
+| Flag ID | Name | Description |
+|---------|------|-------------|
+| `transactions.manual_form.enabled` | Manual Transaction Form | Enable single transaction form |
+| `transactions.bulk_edit.enabled` | Bulk Edit | Enable bulk transaction editing |
+| `reports.performance.enabled` | Performance Reports | Enable performance analytics |
+| `reports.tax.enabled` | Tax Reports | Enable tax lot reporting |
+| `api.external_access.enabled` | External API | Enable external API access |
+| `integrations.plaid.enabled` | Plaid Integration | Enable Plaid broker sync |
+| `notifications.email.enabled` | Email Notifications | Enable email notifications |
+| `notifications.push.enabled` | Push Notifications | Enable push notifications (PWA) |
+
+**Emergency/Maintenance Flags** - Default: Varies
+
+| Flag ID | Name | Description | Default |
+|---------|------|-------------|---------|
+| `system.maintenance_mode.enabled` | Maintenance Mode | Disable writes, show maintenance banner | false |
+| `system.read_only_mode.enabled` | Read-Only Mode | Disable all writes | false |
+| `performance.rate_limiting.enabled` | Rate Limiting | Enable request rate limiting | true |
+| `performance.heavy_operations.enabled` | Heavy Operations | Allow resource-intensive operations | true |
 
 **Client-Side Integration**:
 
@@ -1694,17 +1724,55 @@ function TransactionImportButton() {
 
 **Data Model**:
 
+**Firestore Collection**: `feature_flags`
+
 ```typescript
 interface FeatureFlag {
   flagId: string;                    // e.g., "transactions.csv_import.enabled"
   name: string;                      // Human-readable name
-  description: string;               // What this controls
+  description: string;               // What this flag controls
+  category: 'core' | 'experimental' | 'beta' | 'deprecated';
+
+  // Flag state
   enabled: boolean;                  // Global on/off
-  rolloutPercentage: number;         // 0-100
-  allowedUserIds: string[];          // Beta testers
-  blockedUserIds: string[];          // Excluded users
+  rolloutPercentage: number;         // 0-100, percentage of users
+
+  // Targeting
+  allowedUserIds: string[];          // Specific users (beta testers)
+  blockedUserIds: string[];          // Specific users to exclude
   allowedEnvironments: string[];     // ['development', 'staging', 'production']
-  changeHistory: FlagChangeEvent[];  // Audit trail
+
+  // Metadata
+  createdAt: Timestamp;
+  createdBy: string;                 // Admin user ID
+  updatedAt: Timestamp;
+  updatedBy: string;
+  expiresAt: Timestamp | null;       // Optional expiration (for temporary flags)
+
+  // Audit
+  changeHistory: FlagChangeEvent[];  // Track all changes
+}
+
+interface FlagChangeEvent {
+  timestamp: Timestamp;
+  userId: string;
+  userEmail: string;
+  action: 'enabled' | 'disabled' | 'created' | 'deleted' | 'updated';
+  previousValue: boolean | null;
+  newValue: boolean;
+  reason: string;                    // Why the change was made
+}
+```
+
+**Firestore Subcollection**: `users/{userId}/feature_overrides`
+
+```typescript
+interface UserFeatureOverride {
+  flagId: string;                    // e.g., "transactions.csv_import.enabled"
+  enabled: boolean;                  // Override value
+  reason: string;                    // Why this user has override
+  grantedBy: string;                 // Admin who granted override
+  grantedAt: Timestamp;
   expiresAt: Timestamp | null;       // Optional expiration
 }
 ```
