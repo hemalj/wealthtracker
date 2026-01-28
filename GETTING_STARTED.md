@@ -105,10 +105,10 @@ All detailed documentation is organized in the [`docs/`](docs/) folder:
 | | Material-UI | Component library |
 | | Zustand | State management |
 | | React Query | Server state caching |
+| **Hosting** | TBD (Vercel/Netlify) | Static hosting |
 | **Backend** | Firebase Auth | Authentication |
 | | Cloud Firestore | NoSQL database |
 | | Cloud Functions | Serverless compute |
-| | Firebase Hosting | Static hosting |
 | **APIs** | EODHD | Stock market data |
 | | Stripe | Payment processing |
 | | SendGrid | Email delivery |

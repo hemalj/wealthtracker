@@ -407,10 +407,11 @@ This document details all technologies, libraries, tools, and services used in W
 - **Features**: HTTPS endpoints, scheduled functions, event triggers
 - **Pricing**: Pay-as-you-go (free tier: 2M invocations/month)
 
-**Firebase Hosting**
-- **Purpose**: Static asset hosting with CDN
-- **Features**: SSL, custom domains, SPA routing
-- **Pricing**: Free (10GB storage, 10GB bandwidth/month)
+**Static Hosting (TBD - NOT using Firebase Hosting)**
+- **Options**: Vercel, Netlify, AWS S3+CloudFront, or custom
+- **Required Features**: SSL/HTTPS, CDN, SPA routing, custom domains
+- **Decision**: To be made during implementation phase
+- **Popular Choice**: Vercel (zero-config, free tier: 100GB bandwidth/month)
 
 **Firebase Storage**
 - **Purpose**: File uploads and downloads
@@ -693,12 +694,10 @@ jobs:
       - run: npm ci
       - run: npm run test
       - run: npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          channelId: live
-          projectId: wealthtracker-prod
+      - name: Deploy to hosting provider
+        # TBD: Use Vercel/Netlify/AWS deployment action
+        # Example for Vercel: amondnet/vercel-action@v20
+        # Example for Netlify: nwtgck/actions-netlify@v2.0
 ```
 
 ---
@@ -738,15 +737,28 @@ jobs:
 
 ## Deployment
 
-**Firebase Hosting**
-- **Purpose**: Production hosting
-- **Features**: CDN, SSL, custom domains, rollback
-- **Pricing**: Free tier sufficient for MVP
+**Static Hosting (TBD - NOT using Firebase Hosting)**
 
-**Alternative Hosting** (if needed):
-- **Vercel**: Excellent for React, generous free tier
-- **Netlify**: Similar to Vercel, good DX
-- **AWS Amplify**: More control, steeper learning curve
+**Primary Options**:
+
+1. **Vercel** (Recommended):
+   - **Purpose**: Production hosting for React/Vite apps
+   - **Features**: Zero-config, CDN, SSL, custom domains, instant rollback, preview deployments
+   - **Pricing**: Free tier (100GB bandwidth/month, sufficient for MVP)
+   - **Why**: Best DX for React, automatic optimization, great performance
+
+2. **Netlify**:
+   - **Purpose**: Production hosting
+   - **Features**: CDN, SSL, custom domains, rollback, form handling
+   - **Pricing**: Free tier (100GB bandwidth/month)
+   - **Why**: Similar to Vercel, excellent for SPAs
+
+3. **AWS S3 + CloudFront**:
+   - **Purpose**: Self-managed hosting
+   - **Features**: Full control, pay-as-you-go pricing
+   - **Why**: More control, lower cost at scale (but more setup required)
+
+**Decision**: Will be finalized during implementation based on team preference and requirements
 
 ---
 
@@ -779,11 +791,12 @@ jobs:
 | Validation | Zod | 3.0+ | MIT | Free |
 | Charts | Recharts | 2.0+ | MIT | Free |
 | Dates | date-fns | 3.0+ | MIT | Free |
+| **Hosting** |
+| Static Hosting | TBD (Vercel/Netlify) | - | Proprietary | Free tier |
 | **Backend** |
 | Auth | Firebase Auth | - | Proprietary | Free tier |
 | Database | Firestore | - | Proprietary | Pay-as-you-go |
 | Functions | Cloud Functions | - | Proprietary | Pay-as-you-go |
-| Hosting | Firebase Hosting | - | Proprietary | Free |
 | Storage | Firebase Storage | - | Proprietary | Free tier |
 | **APIs** |
 | Stock Data | EODHD | - | Proprietary | $20/mo |

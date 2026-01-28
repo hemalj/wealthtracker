@@ -30,17 +30,31 @@ WealthTracker is built as a modern, cloud-native single-page application (SPA) u
                               │ HTTPS
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
+│                    STATIC HOSTING (TBD)                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Options: Vercel, Netlify, AWS S3+CloudFront, or Custom         │
+│  • Static Assets (HTML, CSS, JS)                                │
+│  • SPA Routing                                                   │
+│  • CDN Distribution                                              │
+│  • SSL/TLS                                                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTPS
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
 │                      FIREBASE PLATFORM                           │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐ │
-│  │ Firebase Hosting │  │ Firebase Auth    │  │  Firestore   │ │
-│  │                  │  │                  │  │  Database    │ │
-│  │ • Static Assets  │  │ • Email/Password │  │              │ │
-│  │ • SPA Routing    │  │ • Google OAuth   │  │ • NoSQL DB   │ │
-│  │ • CDN            │  │ • Session Mgmt   │  │ • Real-time  │ │
-│  │ • SSL            │  │ • JWT Tokens     │  │ • Security   │ │
-│  └──────────────────┘  └──────────────────┘  └──────────────┘ │
+│  ┌──────────────────┐  ┌──────────────────┐                    │
+│  │ Firebase Auth    │  │  Firestore       │                    │
+│  │                  │  │  Database        │                    │
+│  │ • Email/Password │  │                  │                    │
+│  │ • Google OAuth   │  │ • NoSQL DB       │                    │
+│  │ • Session Mgmt   │  │ • Real-time      │                    │
+│  │ • JWT Tokens     │  │ • Security Rules │                    │
+│  └──────────────────┘  └──────────────────┘                    │
 │                                                                  │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐ │
 │  │ Cloud Functions  │  │ Firebase Storage │  │  Extensions  │ │
@@ -228,44 +242,48 @@ export const updatePrices = onSchedule('every day 00:00', async (event) => {
 
 ---
 
-#### 2.4 Firebase Hosting
+#### 2.4 Static Hosting (TBD)
 
-**Purpose**: Static asset hosting and CDN
+**Purpose**: Host and serve the React SPA to users
 
-**Features**:
-- Global CDN for fast asset delivery
-- Automatic SSL/HTTPS
-- SPA routing support (rewrite all to index.html)
-- Custom domain support
-- Automatic gzip compression
-- Cache control headers
+**NOT using Firebase Hosting** - Will use alternative hosting solution
 
-**Configuration** (`firebase.json`):
-```json
-{
-  "hosting": {
-    "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "max-age=31536000"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+**Popular Options**:
+1. **Vercel** (Recommended for React/Vite apps)
+   - Zero-config deployment
+   - Automatic HTTPS
+   - Global CDN
+   - SPA routing support
+   - Free tier: 100GB bandwidth/month
+
+2. **Netlify**
+   - Easy deployment from Git
+   - Automatic HTTPS
+   - CDN distribution
+   - Free tier: 100GB bandwidth/month
+
+3. **AWS S3 + CloudFront**
+   - Full control
+   - Pay-as-you-go pricing
+   - Requires configuration
+
+4. **Custom Server** (e.g., Nginx on VPS)
+   - Full control
+   - More setup required
+
+**Required Features** (any hosting solution must provide):
+- ✅ HTTPS/SSL support
+- ✅ SPA routing (serve index.html for all routes)
+- ✅ CDN for global delivery
+- ✅ Custom domain support
+- ✅ Gzip/Brotli compression
+- ✅ Cache control headers
+
+**Decision**: Will be made during implementation phase based on:
+- Cost at scale
+- Deployment workflow preferences
+- Performance requirements
+- Team familiarity
 
 ---
 
@@ -466,9 +484,10 @@ await sgMail.send({
 **Firebase Auto-Scales**:
 - Firestore: Automatically scales reads/writes
 - Cloud Functions: Auto-scales based on load
-- Hosting: Global CDN handles traffic spikes
 
-**No Server Management**: Fully managed infrastructure
+**Static Hosting** (Vercel/Netlify/etc):
+- Global CDN handles traffic spikes automatically
+- No server management required
 
 ---
 
@@ -649,7 +668,11 @@ service cloud.firestore {
 - Firestore usage (reads, writes, storage)
 - Cloud Functions invocations and errors
 - Authentication metrics
-- Hosting traffic
+
+**Hosting Provider Dashboard** (Vercel/Netlify/etc):
+- CDN traffic and bandwidth usage
+- Build and deployment status
+- Performance metrics
 
 **Uptime Monitoring**:
 - UptimeRobot or Firebase App Check
@@ -742,7 +765,8 @@ jobs:
       - Run linter (npm run lint)
       - Run tests (npm run test)
       - Build app (npm run build)
-      - Deploy to Firebase Staging (firebase deploy --only hosting,functions --project staging)
+      - Deploy static files to hosting (staging environment)
+      - Deploy Firebase Functions (firebase deploy --only functions --project staging)
       - Run smoke tests
       - Notify team (Slack)
 ```
@@ -806,10 +830,10 @@ jobs:
 | | React Router | Client-side routing |
 | | React Hook Form | Form handling |
 | | Recharts | Data visualization |
+| **Hosting** | TBD (Vercel/Netlify/AWS) | Static hosting & CDN |
 | **Backend** | Firebase Auth | User authentication |
 | | Firestore | NoSQL database |
 | | Cloud Functions | Serverless compute |
-| | Firebase Hosting | Static hosting & CDN |
 | | Firebase Storage | File storage |
 | **APIs** | EODHD | Stock market data |
 | | Stripe | Payment processing |
@@ -898,11 +922,12 @@ jobs:
 
 ## Next Steps
 
-1. Set up Firebase project (auth, firestore, hosting, functions)
-2. Initialize React project with Vite and TypeScript
-3. Implement authentication flows
-4. Design and implement Firestore data model
-5. Build core UI components and design system
+1. Set up Firebase project (auth, firestore, functions, storage)
+2. Choose and configure hosting provider (Vercel/Netlify/AWS/etc)
+3. Initialize React project with Vite and TypeScript
+4. Implement authentication flows
+5. Design and implement Firestore data model
+6. Build core UI components and design system
 6. Implement dashboard and transaction features
 7. Set up CI/CD pipeline
 8. Deploy to staging for testing
