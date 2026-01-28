@@ -447,6 +447,259 @@ This document details all technologies, libraries, tools, and services used in W
 - **Purpose**: CORS middleware for API endpoints
 - **License**: MIT
 
+**papaparse v5** (for CSV parsing)
+- **Purpose**: Fast CSV parser for manual price uploads
+- **License**: MIT
+- **Installation**: `npm install papaparse @types/papaparse`
+
+---
+
+### Cloud Functions Implementation (MVP Development)
+
+**Manual Price Update Function** (Development Phase Only)
+
+**Purpose**: Admin endpoint to manually update stock prices during MVP development to minimize EODHD API costs.
+
+**Function Name**: `updatePricesManual`
+
+**Trigger**: HTTPS callable (or HTTP request)
+
+**Implementation** (`functions/src/updatePricesManual.ts`):
+```typescript
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import Papa from 'papaparse';
+import cors from 'cors';
+
+const corsHandler = cors({ origin: true });
+
+interface PriceData {
+  symbol: string;
+  date: string;
+  open?: number;
+  high?: number;
+  low?: number;
+  close: number;
+  volume?: number;
+  adjustedClose?: number;
+}
+
+interface UpdateResult {
+  success: boolean;
+  summary: {
+    totalSymbols: number;
+    successful: number;
+    failed: number;
+    warnings: number;
+  };
+  errors: Array<{ symbol: string; error: string }>;
+  warnings: Array<{ symbol: string; warning: string }>;
+  processedAt: string;
+  processedBy: string;
+}
+
+export const updatePricesManual = functions
+  .region('us-central1')
+  .runWith({ memory: '512MB', timeoutSeconds: 60 })
+  .https.onRequest(async (req, res) => {
+    return corsHandler(req, res, async () => {
+      try {
+        // 1. Authenticate admin user
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          res.status(401).json({ error: 'Unauthorized: No token provided' });
+          return;
+        }
+
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const userId = decodedToken.uid;
+
+        // Check if user is admin
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        if (!userData || userData.role !== 'admin') {
+          res.status(403).json({ error: 'Forbidden: Admin access required' });
+          return;
+        }
+
+        // 2. Parse price data (CSV or JSON)
+        let priceData: PriceData[];
+        const contentType = req.headers['content-type'] || '';
+
+        if (contentType.includes('text/csv')) {
+          // Parse CSV
+          const csvText = req.body;
+          const parsed = Papa.parse<PriceData>(csvText, {
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+          });
+          priceData = parsed.data;
+        } else if (contentType.includes('application/json')) {
+          // Parse JSON
+          const jsonData = req.body;
+          priceData = Array.isArray(jsonData) ? jsonData : jsonData.prices;
+        } else {
+          res.status(400).json({ error: 'Unsupported content type. Use text/csv or application/json' });
+          return;
+        }
+
+        // 3. Validate and process prices
+        const result: UpdateResult = {
+          success: true,
+          summary: {
+            totalSymbols: priceData.length,
+            successful: 0,
+            failed: 0,
+            warnings: 0,
+          },
+          errors: [],
+          warnings: [],
+          processedAt: new Date().toISOString(),
+          processedBy: userData.email,
+        };
+
+        // Rate limiting check
+        if (priceData.length > 1000) {
+          res.status(400).json({ error: 'Maximum 1000 symbols per request' });
+          return;
+        }
+
+        // Batch write to Firestore
+        const batch = admin.firestore().batch();
+        const pricesRef = admin.firestore().collection('prices');
+
+        for (const price of priceData) {
+          try {
+            // Validate required fields
+            if (!price.symbol || !price.date || !price.close) {
+              result.errors.push({
+                symbol: price.symbol || 'unknown',
+                error: 'Missing required fields: symbol, date, or close',
+              });
+              result.summary.failed++;
+              continue;
+            }
+
+            // Validate price values
+            if (price.close <= 0) {
+              result.errors.push({
+                symbol: price.symbol,
+                error: 'Close price must be greater than 0',
+              });
+              result.summary.failed++;
+              continue;
+            }
+
+            // Check if symbol exists in master database (warning only)
+            const symbolDoc = await admin
+              .firestore()
+              .collection('symbols')
+              .where('eodhd_code', '==', price.symbol)
+              .limit(1)
+              .get();
+
+            if (symbolDoc.empty) {
+              result.warnings.push({
+                symbol: price.symbol,
+                warning: 'Symbol not found in master database',
+              });
+              result.summary.warnings++;
+            }
+
+            // Create price document
+            const priceId = `${price.symbol}_${price.date}`;
+            const priceDoc = {
+              symbol: price.symbol,
+              date: price.date,
+              open: price.open || null,
+              high: price.high || null,
+              low: price.low || null,
+              close: price.close,
+              adjustedClose: price.adjustedClose || price.close,
+              volume: price.volume || null,
+              source: 'manual',
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedBy: userId,
+              ttl: null, // Manual entries don't expire
+            };
+
+            batch.set(pricesRef.doc(priceId), priceDoc, { merge: true });
+            result.summary.successful++;
+          } catch (error) {
+            result.errors.push({
+              symbol: price.symbol || 'unknown',
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            result.summary.failed++;
+          }
+        }
+
+        // Commit batch write
+        await batch.commit();
+
+        // 4. Log to audit trail
+        await admin.firestore().collection('audit_logs').add({
+          action: 'manual_price_update',
+          userId: userId,
+          userEmail: userData.email,
+          symbolCount: result.summary.successful,
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          summary: result.summary,
+        });
+
+        res.status(200).json(result);
+      } catch (error) {
+        console.error('Error in updatePricesManual:', error);
+        res.status(500).json({
+          error: 'Internal server error',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    });
+  });
+```
+
+**Deployment**:
+```bash
+# Deploy function
+firebase deploy --only functions:updatePricesManual
+
+# Get function URL
+firebase functions:config:get
+```
+
+**Usage Example** (with curl):
+```bash
+# Get Firebase auth token
+TOKEN=$(firebase auth:print-identity-token)
+
+# Upload CSV
+curl -X POST \
+  https://us-central1-wealthtracker-dev.cloudfunctions.net/updatePricesManual \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: text/csv" \
+  --data-binary @prices.csv
+```
+
+**Security**:
+- Admin-only access via Firebase Auth token verification
+- Rate limiting: Max 1,000 symbols per request, 10 requests/hour per user
+- Audit logging for all updates
+- CORS restricted to app domain
+
+**Cost Optimization**:
+- During development, update prices once daily using free APIs
+- Eliminates EODHD API calls during MVP development
+- Estimated savings: ~$20/month during 3-4 month MVP phase = $60-80
+
+**Migration Plan**:
+- Mark as deprecated post-MVP
+- Replace with automated EODHD price fetching (background Cloud Function)
+- Keep endpoint available but remove from UI
+- Eventually delete function in Month 6+
+
 ---
 
 ## Third-Party APIs

@@ -1218,6 +1218,243 @@ await firestore.collection('holdings').doc(holdingId).set(position)
 
 ---
 
+### 7.4 Manual Price Updates (MVP Development)
+
+**Priority**: Must Have (MVP Development Phase Only)
+
+**Description**: Admin interface to manually update stock prices during development to minimize EODHD API costs and enable use of free data sources.
+
+**FR-ADMIN-301**: Manual Price Update Endpoint
+
+**Purpose**: Temporary development feature to reduce API costs before automated EODHD integration is fully implemented.
+
+**Functional Requirements**:
+
+- **Admin-Only Access**: Secured endpoint accessible only to users with `role: 'admin'` in their user document
+- **Update Frequency**: Intended for once-daily manual updates during development
+- **Data Format**: Accept price data in CSV or JSON format
+- **Endpoint Type**: Cloud Function with HTTP trigger
+- **Endpoint URL**: `https://{region}-{project-id}.cloudfunctions.net/updatePricesManual`
+
+**FR-ADMIN-302**: Data Input Format
+
+**CSV Format** (Preferred for bulk updates):
+```csv
+symbol,date,open,high,low,close,volume,adjustedClose
+AAPL.US,2026-01-27,150.00,152.50,149.75,151.80,45678900,151.80
+GOOGL.US,2026-01-27,2800.00,2825.00,2790.00,2810.50,1234567,2810.50
+MSFT.US,2026-01-27,380.00,385.00,378.50,383.25,23456789,383.25
+```
+
+**JSON Format** (Alternative):
+```json
+{
+  "date": "2026-01-27",
+  "prices": [
+    {
+      "symbol": "AAPL.US",
+      "open": 150.00,
+      "high": 152.50,
+      "low": 149.75,
+      "close": 151.80,
+      "volume": 45678900,
+      "adjustedClose": 151.80
+    },
+    {
+      "symbol": "GOOGL.US",
+      "open": 2800.00,
+      "high": 2825.00,
+      "low": 2790.00,
+      "close": 2810.50,
+      "volume": 1234567,
+      "adjustedClose": 2810.50
+    }
+  ]
+}
+```
+
+**Required Fields**:
+- `symbol` (string, required): EODHD format (e.g., "AAPL.US", "SHOP.TO")
+- `date` (string, required): ISO 8601 format (YYYY-MM-DD)
+- `close` (number, required): Closing price
+- `adjustedClose` (number, optional): Adjusted close (defaults to close if not provided)
+- `open`, `high`, `low`, `volume` (optional): Additional market data
+
+**FR-ADMIN-303**: Update Processing Logic
+
+1. **Authentication**:
+   - Verify Firebase Auth token in request header
+   - Check user role is 'admin' in Firestore users collection
+   - Reject unauthorized requests with 403 Forbidden
+
+2. **Validation**:
+   - Validate date format (ISO 8601)
+   - Validate required fields present
+   - Validate numeric values (prices > 0, volume >= 0)
+   - Check symbols exist in symbols collection (warn if not found, but allow)
+   - Maximum 1,000 symbols per request
+
+3. **Price Storage**:
+   - For each symbol, upsert document in `prices` collection:
+   ```typescript
+   {
+     priceId: "{symbol}_{date}",  // e.g., "AAPL.US_2026-01-27"
+     symbol: "AAPL.US",
+     date: "2026-01-27",
+     open: 150.00,
+     high: 152.50,
+     low: 149.75,
+     close: 151.80,
+     adjustedClose: 151.80,
+     volume: 45678900,
+     source: "manual",           // Track that this was manually entered
+     updatedAt: timestamp,
+     updatedBy: adminUserId,
+     ttl: null                   // No TTL for manual entries (don't expire)
+   }
+   ```
+
+4. **Response**:
+   - Return summary:
+     - Total symbols processed
+     - Successful updates
+     - Failed updates (with error details)
+     - Warnings (e.g., symbol not found in master database)
+
+**Example Response**:
+```json
+{
+  "success": true,
+  "summary": {
+    "totalSymbols": 150,
+    "successful": 148,
+    "failed": 2,
+    "warnings": 5
+  },
+  "errors": [
+    {
+      "symbol": "INVALID.US",
+      "error": "Invalid price value"
+    }
+  ],
+  "warnings": [
+    {
+      "symbol": "NEWCO.US",
+      "warning": "Symbol not found in master database"
+    }
+  ],
+  "processedAt": "2026-01-27T10:30:00Z",
+  "processedBy": "admin@example.com"
+}
+```
+
+**FR-ADMIN-304**: Web Interface (Optional)
+
+**Priority**: Could Have (Nice to have for MVP development)
+
+- Simple admin page in WealthTracker dashboard (admin-only route)
+- File upload field (CSV or JSON)
+- Date picker (defaults to today)
+- "Upload Prices" button
+- Progress indicator
+- Result display with success/error summary
+- Download sample CSV template button
+
+**FR-ADMIN-305**: Security Requirements
+
+- **Authentication**: Firebase Auth required
+- **Authorization**: User document must have `role: 'admin'`
+- **Rate Limiting**: Max 10 requests per hour per admin user
+- **Audit Logging**: Log all manual price updates with:
+  - Timestamp
+  - Admin user ID and email
+  - Number of symbols updated
+  - Source file name (if uploaded via UI)
+- **CORS**: Restrict to app domain only
+
+**FR-ADMIN-306**: Data Sources for Development
+
+**Free/Low-Cost APIs for Manual Price Collection**:
+
+1. **Yahoo Finance** (via yfinance Python library or web scraping)
+   - Free, no API key required
+   - EOD prices available
+   - Can export to CSV
+
+2. **Alpha Vantage** (Free Tier)
+   - 25 requests/day free
+   - Export to CSV format
+
+3. **Twelve Data** (Free Tier)
+   - 800 requests/day free
+   - CSV export available
+
+4. **Manual Entry from Brokerage**
+   - Copy prices from broker statements
+   - Paste into CSV template
+
+**Workflow During Development**:
+1. Developer/admin collects prices from free source (once per day)
+2. Formats data as CSV
+3. Uploads via manual price update endpoint
+4. All portfolio calculations use cached prices
+5. No EODHD API calls needed during development
+
+**FR-ADMIN-307**: Transition to Production
+
+**When to Remove This Feature**:
+- After MVP launch when EODHD integration is fully automated
+- When automated price fetching is implemented (background Cloud Function)
+- Estimated: Post-MVP (Month 5+)
+
+**Migration Path**:
+- Manual entries marked with `source: 'manual'`
+- Automated system can overwrite manual entries
+- Keep endpoint available but deprecated
+- Remove UI from admin dashboard
+- Eventually delete Cloud Function
+
+**FR-ADMIN-308**: Acceptance Criteria
+
+**Functionality**:
+- ✅ Admin can upload CSV with 100+ symbols in < 5 seconds
+- ✅ Prices immediately available for portfolio calculations
+- ✅ Non-admin users receive 403 Forbidden error
+- ✅ Invalid data returns clear error messages
+- ✅ Duplicate symbol/date combinations update existing record
+
+**Performance**:
+- Process 1,000 symbols in < 10 seconds
+- Firestore batch writes for efficiency
+- No blocking of dashboard during update
+
+**Security**:
+- Only admins can access endpoint
+- All requests logged to audit trail
+- Rate limiting prevents abuse
+- CORS configured correctly
+
+**Data Integrity**:
+- Prices stored in correct format
+- Date validation prevents future dates
+- Numeric validation prevents invalid prices
+- Manual entries clearly marked with source field
+
+**Usability** (if web interface implemented):
+- Clear upload instructions
+- Sample CSV template downloadable
+- Real-time progress indicator
+- Clear success/error messaging
+- Mobile-responsive (admin can update from phone)
+
+---
+
+**⚠️ IMPORTANT NOTE**: This is a **temporary development feature**. It will be replaced by automated EODHD price fetching in Post-MVP phase. Do not build complex UI around this feature.
+
+**Development Priority**: Implement early in MVP (Month 1-2) to enable development and testing without incurring EODHD API costs.
+
+---
+
 ## 8. Reporting & Analytics
 
 ### 8.1 Performance Reports

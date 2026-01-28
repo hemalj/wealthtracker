@@ -804,6 +804,8 @@ symbols: [name ASC]
 
 **Purpose**: Cache stock prices to reduce EODHD API calls
 
+**MVP Development Note**: During MVP development phase, prices can be manually uploaded by admins using the `updatePricesManual` Cloud Function to minimize EODHD API costs. See [Feature Specifications - FR-ADMIN-301](../01-business-requirements/feature-specifications.md#74-manual-price-updates-mvp-development) for details.
+
 ### Document Structure
 
 ```typescript
@@ -825,9 +827,11 @@ interface Price {
 
   // Metadata
   priceType: 'real_time' | 'end_of_day';
-  source: 'eodhd' | 'manual';
+  source: 'eodhd' | 'manual';        // 'manual' for admin-uploaded prices (MVP development)
   createdAt: Timestamp;
-  ttl: Timestamp;                    // Time-to-live (for cache expiration)
+  updatedAt: Timestamp;
+  updatedBy: string | null;          // userId (for manual entries) or 'system' (for EODHD)
+  ttl: Timestamp | null;             // Time-to-live (null for manual entries, timestamp for EODHD cache)
 }
 ```
 
@@ -849,7 +853,32 @@ interface Price {
   "priceType": "end_of_day",
   "source": "eodhd",
   "createdAt": "2026-01-26T20:05:00Z",
+  "updatedAt": "2026-01-26T20:05:00Z",
+  "updatedBy": "system",
   "ttl": "2026-01-27T20:05:00Z"
+}
+```
+
+**Example Manual Price Entry** (MVP Development):
+```json
+{
+  "priceId": "aapl_nasdaq_2026-01-27",
+  "symbolId": "aapl_nasdaq",
+  "symbol": "AAPL",
+  "exchange": "NASDAQ",
+  "date": "2026-01-27T16:00:00Z",
+  "open": 185.00,
+  "high": 187.50,
+  "low": 184.25,
+  "close": 186.80,
+  "volume": 48234100,
+  "adjustedClose": 186.80,
+  "priceType": "end_of_day",
+  "source": "manual",
+  "createdAt": "2026-01-27T10:30:00Z",
+  "updatedAt": "2026-01-27T10:30:00Z",
+  "updatedBy": "admin_user_id_123",
+  "ttl": null
 }
 ```
 
