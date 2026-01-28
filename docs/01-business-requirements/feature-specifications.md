@@ -1670,6 +1670,978 @@ MSFT.US,2026-01-27,380.00,385.00,378.50,383.25,23456789,383.25
 
 ---
 
+## Unit Testing Requirements
+
+### Testing Strategy Overview
+
+**Philosophy**: Test-driven approach with comprehensive unit test coverage for all business logic, especially calculations involving money, positions, and tax lots.
+
+**Coverage Targets**:
+- **Overall**: 80%+ code coverage
+- **Business Logic**: 95%+ coverage (calculations, validations, state management)
+- **UI Components**: 70%+ coverage (critical user flows)
+- **Cloud Functions**: 90%+ coverage (backend logic, API endpoints)
+
+**Testing Tools**:
+- **Unit Tests**: Vitest + React Testing Library
+- **Component Tests**: React Testing Library + @testing-library/jest-dom
+- **Integration Tests**: Firebase Emulators
+- **E2E Tests**: Cypress or Playwright (critical user flows only)
+
+---
+
+### 1. Authentication & User Management Tests
+
+**Module**: `src/features/auth/`
+
+#### Test Suite: User Registration (FR-AUTH-001, FR-AUTH-002, FR-AUTH-003)
+
+**Unit Tests**:
+```typescript
+describe('User Registration', () => {
+  describe('Email/Password Registration', () => {
+    it('should register user with valid email and password', async () => {
+      // Test: Valid email format, password meets requirements
+      // Expected: User created, verification email sent
+    });
+
+    it('should reject weak passwords', () => {
+      // Test: Password < 8 chars, no uppercase, no number
+      // Expected: Validation error with specific message
+    });
+
+    it('should reject invalid email formats', () => {
+      // Test: Email without @, invalid domain
+      // Expected: Validation error
+    });
+
+    it('should reject duplicate email addresses', async () => {
+      // Test: Register with existing email
+      // Expected: Error "Email already in use"
+    });
+
+    it('should create user profile in Firestore after registration', async () => {
+      // Test: After successful registration
+      // Expected: User document exists with correct initial fields
+    });
+  });
+
+  describe('Google OAuth Registration', () => {
+    it('should register user via Google OAuth', async () => {
+      // Test: Google OAuth flow
+      // Expected: User created without email verification
+    });
+
+    it('should auto-populate profile from Google', async () => {
+      // Test: OAuth response includes name, email, photo
+      // Expected: Profile populated with Google data
+    });
+  });
+});
+```
+
+**Coverage Requirements**:
+- ✅ All validation rules tested
+- ✅ Success and error paths covered
+- ✅ Firestore user document creation verified
+- ✅ Email verification flow tested
+
+---
+
+#### Test Suite: User Authentication (FR-AUTH-101, FR-AUTH-102, FR-AUTH-103, FR-AUTH-104)
+
+**Unit Tests**:
+```typescript
+describe('User Authentication', () => {
+  describe('Login', () => {
+    it('should login with valid credentials', async () => {
+      // Expected: Session token created, user redirected
+    });
+
+    it('should reject invalid credentials', async () => {
+      // Expected: Error message, no session created
+    });
+
+    it('should enforce rate limiting after 5 failed attempts', async () => {
+      // Test: 6 consecutive failed logins
+      // Expected: 15-minute lockout after 5th failure
+    });
+  });
+
+  describe('Password Reset', () => {
+    it('should send password reset email', async () => {
+      // Test: Valid email provided
+      // Expected: Reset email sent
+    });
+
+    it('should reset password with valid token', async () => {
+      // Test: Click reset link, enter new password
+      // Expected: Password updated, auto-login
+    });
+  });
+
+  describe('Session Management', () => {
+    it('should persist session across browser restarts', () => {
+      // Test: Close and reopen browser
+      // Expected: User still logged in
+    });
+
+    it('should expire session after 30 days of inactivity', async () => {
+      // Test: Simulate 30 days inactivity
+      // Expected: Session expired, user logged out
+    });
+  });
+});
+```
+
+---
+
+### 2. Dashboard & Holdings Tests
+
+**Module**: `src/features/dashboard/`
+
+#### Test Suite: Portfolio Summary (FR-DASH-001 to FR-DASH-005)
+
+**Unit Tests**:
+```typescript
+describe('Portfolio Summary', () => {
+  describe('Holdings Summary Calculation', () => {
+    it('should calculate total portfolio value correctly', () => {
+      // Test: Multiple holdings across accounts
+      // Expected: Sum of all market values accurate to 2 decimals
+    });
+
+    it('should calculate unrealized gain/loss correctly', () => {
+      // Test: Holdings with gains and losses
+      // Expected: (marketValue - costBasis) calculated correctly
+    });
+
+    it('should calculate unrealized gain percentage correctly', () => {
+      // Test: Various cost basis and market values
+      // Expected: ((marketValue - costBasis) / costBasis) * 100
+    });
+
+    it('should handle zero cost basis edge case', () => {
+      // Test: Position with zero cost basis
+      // Expected: No division by zero error, return 0% or N/A
+    });
+  });
+
+  describe('Currency Grouping', () => {
+    it('should group holdings by currency', () => {
+      // Test: Holdings in USD, CAD, INR
+      // Expected: Grouped totals accurate
+    });
+
+    it('should convert to base currency', () => {
+      // Test: User base currency USD, holdings in CAD
+      // Expected: Conversion rate applied correctly
+    });
+  });
+
+  describe('Account Grouping', () => {
+    it('should calculate account-level totals', () => {
+      // Test: Holdings across 3 accounts
+      // Expected: Each account total accurate
+    });
+  });
+});
+```
+
+---
+
+#### Test Suite: Holdings Table (FR-DASH-101 to FR-DASH-105)
+
+**Unit Tests**:
+```typescript
+describe('Holdings Table', () => {
+  describe('Filtering', () => {
+    it('should filter holdings by account', () => {
+      // Test: Select single account filter
+      // Expected: Only holdings from that account displayed
+    });
+
+    it('should filter holdings by multiple accounts', () => {
+      // Test: Select 2 accounts
+      // Expected: Holdings from both accounts displayed
+    });
+
+    it('should filter holdings by currency', () => {
+      // Expected: Only USD holdings shown
+    });
+  });
+
+  describe('Sorting', () => {
+    it('should sort by market value descending by default', () => {
+      // Expected: Largest position first
+    });
+
+    it('should sort by any column ascending/descending', () => {
+      // Test: Click column header twice
+      // Expected: Sort order toggles
+    });
+  });
+
+  describe('Pagination', () => {
+    it('should paginate holdings correctly', () => {
+      // Test: 100 holdings, 25 per page
+      // Expected: 4 pages, correct holdings on each page
+    });
+  });
+});
+```
+
+---
+
+### 3. Transaction Management Tests
+
+**Module**: `src/features/transactions/`
+
+#### Test Suite: Transaction CRUD (FR-TRANS-001 to FR-TRANS-006)
+
+**Unit Tests**:
+```typescript
+describe('Transaction Creation', () => {
+  describe('Buy Transaction', () => {
+    it('should create buy transaction with valid data', async () => {
+      // Test: All required fields provided
+      // Expected: Transaction saved to Firestore
+    });
+
+    it('should calculate total amount correctly', () => {
+      // Test: quantity=100, unitPrice=150.50, fees=5, commission=9.99
+      // Expected: totalAmount = 15050 + 5 + 9.99 = 15064.99
+    });
+
+    it('should validate quantity is positive', () => {
+      // Test: quantity = 0 or negative
+      // Expected: Validation error
+    });
+
+    it('should validate unit price is positive', () => {
+      // Test: unitPrice = 0 or negative
+      // Expected: Validation error
+    });
+  });
+
+  describe('Sell Transaction', () => {
+    it('should create sell transaction', async () => {
+      // Expected: Transaction saved
+    });
+
+    it('should prevent selling more than owned', async () => {
+      // Test: Position has 50 shares, try to sell 60
+      // Expected: Validation error
+    });
+
+    it('should calculate realized gain correctly', () => {
+      // Test: Sell 50 @ $175, cost basis $150
+      // Expected: realizedGain = (175 - 150) * 50 = $1,250
+    });
+  });
+
+  describe('Initial Position Transaction', () => {
+    it('should create initial position', async () => {
+      // Test: Symbol, quantity, unitPrice, date
+      // Expected: Transaction created
+    });
+
+    it('should not affect cash balance', () => {
+      // Expected: totalAmount set but no cash movement
+    });
+  });
+
+  describe('Dividend Transaction', () => {
+    it('should create dividend transaction', async () => {
+      // Test: Symbol, totalAmount (no quantity/price)
+      // Expected: Transaction saved
+    });
+
+    it('should not require quantity or unit price', () => {
+      // Expected: Null values accepted for these fields
+    });
+  });
+
+  describe('Split Transaction', () => {
+    it('should create forward split transaction', async () => {
+      // Test: splitRatio = "2:1"
+      // Expected: splitRatioMultiplier = 2.0
+    });
+
+    it('should create reverse split transaction', async () => {
+      // Test: splitRatio = "1:5"
+      // Expected: splitRatioMultiplier = 0.2
+    });
+
+    it('should parse split ratio correctly', () => {
+      // Test: "4:1", "1:10", "3:2"
+      // Expected: Correct multipliers calculated
+    });
+  });
+});
+```
+
+---
+
+### 4. Position Calculation Logic Tests
+
+**Module**: `src/features/holdings/calculations/`
+
+**CRITICAL**: These tests are the most important for data integrity and accuracy.
+
+#### Test Suite: Position Calculation (FR-TRANS-301)
+
+**Unit Tests**:
+```typescript
+describe('Position Calculation Engine', () => {
+  describe('Initial Position Priority Rule', () => {
+    it('should ignore BUY transactions on or before Initial Position date', () => {
+      // Test:
+      // - BUY 50 @ $100 on Jan 1
+      // - BUY 30 @ $110 on Jan 5
+      // - INITIAL POSITION 100 @ $105 on Jan 10
+      // - BUY 20 @ $108 on Jan 15
+      // Expected:
+      // - Position: 120 shares
+      // - Cost basis: (100 * 105) + (20 * 108) = $12,660
+      // - Avg cost: $105.50/share
+    });
+
+    it('should include BUY transactions after Initial Position date', () => {
+      // Test: Initial Position on Jan 10, BUY on Jan 15
+      // Expected: Both included in position
+    });
+
+    it('should handle multiple Initial Positions (use most recent)', () => {
+      // Test: Initial Position on Jan 1, another on Jan 10
+      // Expected: Jan 10 Initial Position used, Jan 1 ignored
+    });
+  });
+
+  describe('Average Cost Calculation', () => {
+    it('should calculate average cost correctly', () => {
+      // Test: BUY 100 @ $10, BUY 50 @ $12
+      // Expected: avgCost = ($1000 + $600) / 150 = $10.67/share
+    });
+
+    it('should include fees and commissions in cost basis', () => {
+      // Test: BUY 100 @ $10, fees=$5, commission=$9.99
+      // Expected: costBasis = $1014.99, avgCost = $10.15/share
+    });
+
+    it('should include MER in cost basis', () => {
+      // Test: BUY 100 @ $10, mer=$12.50
+      // Expected: costBasis = $1012.50
+    });
+  });
+
+  describe('FIFO Sell Calculation', () => {
+    it('should sell from oldest lot first (FIFO)', () => {
+      // Test:
+      // - LOT 1: 50 @ $10 on Jan 1
+      // - LOT 2: 30 @ $12 on Feb 1
+      // - SELL 60 on Mar 1
+      // Expected:
+      // - Sell all of LOT 1 (50 shares)
+      // - Sell 10 from LOT 2
+      // - Remaining: LOT 2 with 20 shares
+    });
+
+    it('should calculate realized gain correctly', () => {
+      // Test: Sell 50 @ $15, cost basis $10/share
+      // Expected: realizedGain = (15 - 10) * 50 = $250
+    });
+
+    it('should handle partial lot sales', () => {
+      // Test: LOT has 100 shares, sell 30
+      // Expected: LOT reduced to 70 shares, cost basis adjusted
+    });
+
+    it('should subtract fees from realized gain', () => {
+      // Test: Realized gain $250, commission $9.99
+      // Expected: netRealizedGain = $240.01
+    });
+  });
+
+  describe('Forward Stock Split', () => {
+    it('should multiply quantity and divide cost per share', () => {
+      // Test: 100 shares @ $50, 2:1 split
+      // Expected:
+      // - Quantity: 200 shares
+      // - Cost per share: $25
+      // - Total cost basis: $5000 (unchanged)
+    });
+
+    it('should adjust all tax lots proportionally', () => {
+      // Test: LOT 1: 50 @ $50, LOT 2: 50 @ $60, 2:1 split
+      // Expected:
+      // - LOT 1: 100 @ $25
+      // - LOT 2: 100 @ $30
+    });
+  });
+
+  describe('Reverse Stock Split', () => {
+    it('should handle whole shares only', () => {
+      // Test: 27 shares, 1:5 split
+      // Expected: 5 whole shares (27 / 5 = 5.4, floor to 5)
+    });
+
+    it('should calculate cash in lieu for fractional shares', () => {
+      // Test:
+      // - 27 old shares @ $10, 1:5 split
+      // - New share price: $50
+      // - 0.4 fractional new shares
+      // Expected:
+      // - cashInLieu = 0.4 * $50 = $20
+    });
+
+    it('should adjust cost basis to exclude fractional shares', () => {
+      // Test:
+      // - 27 shares @ $10 = $270 cost basis
+      // - 1:5 split → 5 new shares
+      // - 25 old shares convert (5 * 5 = 25)
+      // - 2 old shares paid as cash in lieu
+      // Expected:
+      // - New cost basis: $250 (not $270!)
+      // - Cost per share: $50
+    });
+
+    it('should calculate realized gain from cash in lieu', () => {
+      // Test:
+      // - 2 old shares @ $10 = $20 cost
+      // - Cash in lieu: $20
+      // Expected: realizedGain = $20 - $20 = $0
+    });
+
+    it('should handle fractional cost basis correctly', () => {
+      // Test: Edge cases where cost basis doesn't divide evenly
+      // Expected: Accurate to 2 decimal places
+    });
+  });
+
+  describe('Dividend Tracking', () => {
+    it('should accumulate dividend income', () => {
+      // Test: 3 dividend payments: $24, $24, $26
+      // Expected: dividendIncomeToDate = $74
+    });
+
+    it('should not affect position quantity or cost basis', () => {
+      // Expected: Dividends have no impact on shares or cost
+    });
+  });
+
+  describe('Position Recalculation', () => {
+    it('should recalculate position after transaction edit', async () => {
+      // Test: Edit buy quantity from 100 to 150
+      // Expected: Position updated immediately
+    });
+
+    it('should recalculate position after transaction delete', async () => {
+      // Test: Delete a buy transaction
+      // Expected: Position quantity and cost basis reduced
+    });
+
+    it('should handle complex transaction history', () => {
+      // Test: 20 transactions (buys, sells, dividends, splits)
+      // Expected: Final position accurate, recalculation < 100ms
+    });
+  });
+});
+```
+
+**Edge Cases**:
+```typescript
+describe('Position Calculation Edge Cases', () => {
+  it('should handle zero quantity position', () => {
+    // Test: All shares sold
+    // Expected: Position quantity = 0, isClosedPosition = true
+  });
+
+  it('should handle same-day multiple transactions', () => {
+    // Test: Buy and sell on same day
+    // Expected: Processed chronologically
+  });
+
+  it('should handle transactions entered out of order', () => {
+    // Test: Enter Jan 15 transaction before Jan 10
+    // Expected: Processed in chronological order by date
+  });
+
+  it('should handle very large positions', () => {
+    // Test: 1,000,000 shares
+    // Expected: No overflow errors, accurate to 2 decimals
+  });
+
+  it('should handle very small unit prices', () => {
+    // Test: $0.01 per share
+    // Expected: Accurate calculations
+  });
+});
+```
+
+**Coverage Requirements**:
+- ✅ 95%+ coverage (this is critical business logic)
+- ✅ All edge cases tested
+- ✅ Performance benchmarks included
+- ✅ Accuracy to 2 decimal places verified
+
+---
+
+### 5. Account Management Tests
+
+**Module**: `src/features/accounts/`
+
+#### Test Suite: Account CRUD (FR-ACCT-001 to FR-ACCT-005)
+
+**Unit Tests**:
+```typescript
+describe('Account Management', () => {
+  describe('Create Account', () => {
+    it('should create account with valid data', async () => {
+      // Expected: Account saved to Firestore
+    });
+
+    it('should generate unique accountId', () => {
+      // Test: Create 2 accounts
+      // Expected: Different IDs
+    });
+
+    it('should prevent duplicate account names', () => {
+      // Test: Create account with existing name
+      // Expected: Validation error
+    });
+  });
+
+  describe('Delete Account', () => {
+    it('should prevent deletion if transactions exist', async () => {
+      // Test: Account has 5 transactions
+      // Expected: Error message
+    });
+
+    it('should allow cascade delete', async () => {
+      // Test: Delete account and all transactions
+      // Expected: Account and transactions removed
+    });
+  });
+});
+```
+
+---
+
+### 6. Calculators Tests
+
+**Module**: `src/features/calculators/`
+
+#### Test Suite: Simple Interest Calculator (FR-CALC-001)
+
+**Unit Tests**:
+```typescript
+describe('Simple Interest Calculator', () => {
+  it('should calculate simple interest correctly', () => {
+    // Test: Principal=$1000, rate=5%, time=3 years
+    // Formula: Interest = P * R * T / 100
+    // Expected: Interest = $150, Total = $1150
+  });
+
+  it('should handle zero principal', () => {
+    // Expected: Interest = $0
+  });
+
+  it('should handle zero rate', () => {
+    // Expected: Interest = $0
+  });
+
+  it('should calculate accurately to 2 decimal places', () => {
+    // Test: Various fractional values
+    // Expected: Rounded to 2 decimals
+  });
+});
+```
+
+#### Test Suite: Compound Interest Calculator (FR-CALC-101, FR-CALC-102)
+
+**Unit Tests**:
+```typescript
+describe('Compound Interest Calculator', () => {
+  it('should calculate compound interest correctly', () => {
+    // Test: P=$1000, r=5%, t=10 years, compounded annually
+    // Formula: A = P(1 + r/n)^(nt)
+    // Expected: A = $1628.89
+  });
+
+  it('should handle different compounding frequencies', () => {
+    // Test: Same values, compounded monthly vs quarterly
+    // Expected: Monthly yields slightly more
+  });
+
+  it('should include additional contributions', () => {
+    // Test: $100/month additional contributions
+    // Expected: Total includes principal + contributions + interest
+  });
+
+  it('should generate year-by-year breakdown', () => {
+    // Test: 10 years
+    // Expected: 10 data points with correct values
+  });
+});
+```
+
+---
+
+### 7. Admin Features Tests
+
+**Module**: `src/features/admin/`
+
+#### Test Suite: Stock Symbol Management (FR-ADMIN-001 to FR-ADMIN-004)
+
+**Unit Tests**:
+```typescript
+describe('Stock Symbol Management', () => {
+  describe('Add Symbol', () => {
+    it('should add stock symbol with valid data', async () => {
+      // Expected: Symbol saved to Firestore
+    });
+
+    it('should prevent duplicate symbol+exchange', () => {
+      // Test: Add AAPL on NASDAQ twice
+      // Expected: Error on second attempt
+    });
+
+    it('should validate EODHD code format', () => {
+      // Test: "AAPL.US" valid, "AAPL" invalid
+      // Expected: Validation error for invalid format
+    });
+  });
+
+  describe('Bulk Import', () => {
+    it('should import 1000 symbols in < 30 seconds', async () => {
+      // Test: Upload CSV with 1000 rows
+      // Expected: All imported, time < 30s
+    });
+
+    it('should validate CSV format', () => {
+      // Test: Missing required columns
+      // Expected: Validation error with details
+    });
+  });
+});
+```
+
+#### Test Suite: Manual Price Updates (FR-ADMIN-301 to FR-ADMIN-308)
+
+**Unit Tests**:
+```typescript
+describe('Manual Price Updates', () => {
+  describe('Authentication & Authorization', () => {
+    it('should reject unauthenticated requests', async () => {
+      // Test: No auth token
+      // Expected: 401 Unauthorized
+    });
+
+    it('should reject non-admin users', async () => {
+      // Test: Regular user token
+      // Expected: 403 Forbidden
+    });
+
+    it('should allow admin users', async () => {
+      // Test: Admin user token
+      // Expected: 200 OK
+    });
+  });
+
+  describe('CSV Parsing', () => {
+    it('should parse valid CSV correctly', () => {
+      // Test: CSV with 100 symbols
+      // Expected: All 100 parsed correctly
+    });
+
+    it('should handle missing optional fields', () => {
+      // Test: CSV with only required fields
+      // Expected: Optional fields default to null
+    });
+
+    it('should validate required fields', () => {
+      // Test: CSV missing "close" field
+      // Expected: Error for each row
+    });
+  });
+
+  describe('Price Validation', () => {
+    it('should reject negative prices', () => {
+      // Test: close = -10
+      // Expected: Validation error
+    });
+
+    it('should reject zero prices', () => {
+      // Test: close = 0
+      // Expected: Validation error
+    });
+
+    it('should accept positive prices', () => {
+      // Test: close = 150.75
+      // Expected: Price saved
+    });
+  });
+
+  describe('Batch Processing', () => {
+    it('should process 1000 symbols in < 10 seconds', async () => {
+      // Test: Max batch size
+      // Expected: All processed quickly
+    });
+
+    it('should use Firestore batch writes', async () => {
+      // Expected: Batch operations used (not individual writes)
+    });
+
+    it('should enforce max 1000 symbols per request', async () => {
+      // Test: 1001 symbols
+      // Expected: 400 Bad Request
+    });
+  });
+
+  describe('Audit Logging', () => {
+    it('should log all price updates', async () => {
+      // Expected: audit_logs collection entry created
+    });
+
+    it('should include admin user info in log', async () => {
+      // Expected: userId, email, timestamp recorded
+    });
+  });
+
+  describe('Response Format', () => {
+    it('should return summary of results', async () => {
+      // Expected: totalSymbols, successful, failed, warnings
+    });
+
+    it('should return detailed errors', async () => {
+      // Test: 2 invalid symbols in batch
+      // Expected: errors array with symbol and error message
+    });
+  });
+});
+```
+
+---
+
+### 8. Integration Tests
+
+**Module**: `tests/integration/`
+
+**Firebase Emulator Tests**:
+```typescript
+describe('Firebase Integration Tests', () => {
+  beforeAll(async () => {
+    // Start Firebase emulators
+  });
+
+  describe('Transaction to Holdings Flow', () => {
+    it('should create transaction and update holdings', async () => {
+      // Test: Create BUY transaction
+      // Expected: Holdings collection updated immediately
+    });
+
+    it('should recalculate holdings on transaction edit', async () => {
+      // Test: Edit transaction quantity
+      // Expected: Holdings recalculated
+    });
+  });
+
+  describe('Firestore Security Rules', () => {
+    it('should prevent users from accessing other users data', async () => {
+      // Test: User A tries to read User B's transactions
+      // Expected: Permission denied
+    });
+
+    it('should allow users to access their own data', async () => {
+      // Expected: Read/write allowed
+    });
+
+    it('should enforce admin-only access to symbols collection', async () => {
+      // Test: Regular user tries to write to symbols
+      // Expected: Permission denied
+    });
+  });
+
+  describe('Cloud Functions', () => {
+    it('should trigger holding recalculation on transaction create', async () => {
+      // Test: Cloud Function trigger
+      // Expected: Holdings updated
+    });
+  });
+});
+```
+
+---
+
+### 9. E2E Tests (Critical User Flows Only)
+
+**Module**: `tests/e2e/`
+
+**Cypress/Playwright Tests**:
+```typescript
+describe('Critical User Flows', () => {
+  describe('New User Onboarding', () => {
+    it('should complete full registration and first transaction', () => {
+      // 1. Sign up with email
+      // 2. Verify email
+      // 3. Login
+      // 4. Create first account
+      // 5. Add first transaction
+      // 6. View dashboard with position
+    });
+  });
+
+  describe('Portfolio Management', () => {
+    it('should add multiple transactions and view portfolio', () => {
+      // 1. Add 3 buy transactions
+      // 2. Add 1 dividend
+      // 3. View dashboard
+      // 4. Verify calculations accurate
+    });
+
+    it('should sell position and see realized gain', () => {
+      // 1. Buy 100 shares
+      // 2. Sell 50 shares
+      // 3. Verify realized gain displayed correctly
+    });
+  });
+});
+```
+
+---
+
+### 10. Performance Tests
+
+**Module**: `tests/performance/`
+
+```typescript
+describe('Performance Benchmarks', () => {
+  describe('Position Calculation Performance', () => {
+    it('should calculate position with 100 transactions in < 100ms', () => {
+      // Test: 100 buy/sell transactions
+      // Expected: Calculation completes in < 100ms
+    });
+
+    it('should calculate position with 1000 transactions in < 500ms', () => {
+      // Test: Large transaction history
+      // Expected: Acceptable performance
+    });
+  });
+
+  describe('Dashboard Load Performance', () => {
+    it('should load dashboard with 50 positions in < 2 seconds', () => {
+      // Test: 50 holdings
+      // Expected: Dashboard renders quickly
+    });
+  });
+});
+```
+
+---
+
+### Test Data Requirements
+
+**Mock Data Sets**:
+1. **Users**: 10 test users with different profiles
+2. **Accounts**: 30 accounts across test users
+3. **Symbols**: 100 stock symbols (US, Canada, India)
+4. **Transactions**: 500 transactions covering all types
+5. **Prices**: Historical price data for 100 symbols (1 year)
+
+**Fixtures**: `tests/fixtures/`
+- `users.json` - Test user data
+- `accounts.json` - Test accounts
+- `symbols.json` - Stock symbols
+- `transactions.json` - Sample transactions
+- `prices.json` - Price data
+
+---
+
+### Continuous Integration
+
+**GitHub Actions Workflow**:
+```yaml
+name: Test Suite
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run test:integration
+      - run: npm run test:coverage
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+```
+
+---
+
+### Coverage Reporting
+
+**Tools**:
+- **Istanbul/c8**: Code coverage reporting
+- **Codecov**: Coverage visualization and tracking
+- **PR Comments**: Automatic coverage reports on pull requests
+
+**Coverage Badges**:
+- Display coverage percentage in README
+- Fail CI if coverage drops below 80%
+
+---
+
+### Test Execution Strategy
+
+**Local Development**:
+```bash
+# Run all tests
+npm run test
+
+# Run unit tests only
+npm run test:unit
+
+# Run integration tests
+npm run test:integration
+
+# Run with coverage
+npm run test:coverage
+
+# Run in watch mode (during development)
+npm run test:watch
+
+# Run specific test file
+npm run test src/features/transactions/calculations.test.ts
+```
+
+**Pre-Commit Hook**:
+- Run unit tests on changed files
+- Ensure new code has tests
+- Block commit if tests fail
+
+**Pre-Push Hook**:
+- Run full test suite
+- Check coverage thresholds
+- Block push if tests fail or coverage drops
+
+---
+
+### Testing Best Practices
+
+1. **AAA Pattern**: Arrange, Act, Assert
+2. **Descriptive Names**: Test names should read like documentation
+3. **One Assertion Per Test**: Keep tests focused
+4. **Isolated Tests**: No dependencies between tests
+5. **Mock External Dependencies**: Firebase, APIs, etc.
+6. **Test Edge Cases**: Zero, negative, null, undefined, very large numbers
+7. **Performance Benchmarks**: Include timing assertions for critical calculations
+
+---
+
 ## Acceptance Criteria Template
 
 For each feature:
