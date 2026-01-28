@@ -24,6 +24,12 @@ node_modules/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+serviceAccountKey.json
+**/serviceAccountKey.json
+
+# Configuration (contains sensitive credentials - filled version only, not template)
+# The template is committed, but your filled copy should not be
+docs/03-implementation/configuration-reference.md
 
 # Logs
 logs
