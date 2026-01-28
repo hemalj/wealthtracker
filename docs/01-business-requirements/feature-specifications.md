@@ -1604,8 +1604,6 @@ MSFT.US,2026-01-27,380.00,385.00,378.50,383.25,23456789,383.25
 
 **Description**: Admin-controlled feature flags to dynamically enable/disable features without deploying code. Provides flexibility for gradual rollouts, emergency kill switches, beta testing, and A/B testing.
 
-**For detailed specification, see**: [FEATURE_FLAGS_SPECIFICATION.md](FEATURE_FLAGS_SPECIFICATION.md)
-
 **Use Cases**:
 - **Gradual Rollout**: Release features to 10% → 25% → 50% → 100% of users
 - **Kill Switch**: Immediately disable problematic features
