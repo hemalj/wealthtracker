@@ -1,4 +1,10 @@
-# Feature Flags System Specification
+# Feature Flags Implementation Guide
+
+> **Note**: This is a **developer implementation guide**. For business requirements, data models, and feature flag specifications, see:
+> - **[Feature Specifications](../01-business-requirements/feature-specifications.md) - Section 7.5**
+> - **[Technology Stack](technology-stack.md) - State Management section**
+>
+> This document provides detailed implementation examples, code samples, testing strategies, and best practices for developers.
 
 ## Overview
 
@@ -6,171 +12,31 @@ Feature flags (also called feature toggles) allow admins to dynamically enable/d
 
 ---
 
-## Business Requirements
+## Quick Reference
 
-### Use Cases
+**For business requirements**: See [feature-specifications.md Section 7.5](../01-business-requirements/feature-specifications.md#75-feature-flags-system)
+- Admin UI requirements (FR-ADMIN-401 to FR-ADMIN-405)
+- Complete feature flags list
+- Data models (FeatureFlag, FlagChangeEvent, UserFeatureOverride)
+- Use cases and acceptance criteria
 
-1. **Gradual Rollout**: Release features to small percentage of users first, then increase
-2. **Kill Switch**: Immediately disable problematic features without redeploying
-3. **Beta Features**: Enable experimental features for specific users (beta testers)
-4. **Maintenance Mode**: Disable writes during maintenance windows
-5. **Region-Specific Features**: Enable features for specific regions only
-6. **A/B Testing**: Test different implementations with different user groups
-7. **Emergency Response**: Quickly disable resource-intensive features under load
-
----
-
-## Feature Flag Types
-
-### 1. Global Feature Flags
-
-**Description**: On/off switches that affect all users
-
-**Examples**:
-- `transactions.csv_import.enabled` - Enable/disable CSV import
-- `dashboard.realtime_prices.enabled` - Enable/disable real-time price updates
-- `calculators.compound_interest.enabled` - Enable/disable compound interest calculator
-- `admin.manual_price_updates.enabled` - Enable/disable manual price update feature
-
-**Storage**: Firestore `feature_flags` collection
-
-### 2. User-Level Feature Flags
-
-**Description**: Per-user overrides for beta testing
-
-**Examples**:
-- Enable CSV import for specific beta testers
-- Enable new dashboard design for specific users
-
-**Storage**: `users/{userId}/feature_overrides` subcollection
-
-### 3. Percentage Rollout Flags
-
-**Description**: Enable features for X% of users (gradual rollout)
-
-**Examples**:
-- Enable new transaction form for 10% of users
-- Enable PDF export for 25% of users
-
-**Logic**: Hash user ID, check if `hash(userId) % 100 < percentage`
-
-### 4. Environment-Based Flags
-
-**Description**: Different flag states for dev/staging/prod
-
-**Examples**:
-- Enable debug logging in dev/staging only
-- Enable maintenance mode in staging for testing
+**For architecture**: See [technology-stack.md](technology-stack.md)
+- Feature flags in State Management section
+- Custom React hook implementation
+- Real-time Firestore listeners
 
 ---
 
-## Data Model
+## Implementation Details
 
-### Firestore: `feature_flags` Collection
+> **Business requirements removed** - See [feature-specifications.md Section 7.5](../01-business-requirements/feature-specifications.md#75-feature-flags-system) for:
+> - Use cases
+> - Feature flag types
+> - Data models (FeatureFlag, FlagChangeEvent, UserFeatureOverride)
+> - Complete feature flags list (20+ flags)
+> - Admin UI requirements (FR-ADMIN-401 to FR-ADMIN-405)
 
-```typescript
-interface FeatureFlag {
-  flagId: string;                    // e.g., "transactions.csv_import"
-  name: string;                      // Human-readable name
-  description: string;               // What this flag controls
-  category: 'core' | 'experimental' | 'beta' | 'deprecated';
-
-  // Flag state
-  enabled: boolean;                  // Global on/off
-  rolloutPercentage: number;         // 0-100, percentage of users
-
-  // Targeting
-  allowedUserIds: string[];          // Specific users (beta testers)
-  blockedUserIds: string[];          // Specific users to exclude
-  allowedEnvironments: string[];     // ['development', 'staging', 'production']
-
-  // Metadata
-  createdAt: Timestamp;
-  createdBy: string;                 // Admin user ID
-  updatedAt: Timestamp;
-  updatedBy: string;
-  expiresAt: Timestamp | null;       // Optional expiration (for temporary flags)
-
-  // Audit
-  changeHistory: FlagChangeEvent[];  // Track all changes
-}
-
-interface FlagChangeEvent {
-  timestamp: Timestamp;
-  userId: string;
-  userEmail: string;
-  action: 'enabled' | 'disabled' | 'created' | 'deleted' | 'updated';
-  previousValue: boolean | null;
-  newValue: boolean;
-  reason: string;                    // Why the change was made
-}
-```
-
-### User-Level Overrides: `users/{userId}/feature_overrides` Subcollection
-
-```typescript
-interface UserFeatureOverride {
-  flagId: string;                    // e.g., "transactions.csv_import"
-  enabled: boolean;                  // Override value
-  reason: string;                    // Why this user has override
-  grantedBy: string;                 // Admin who granted override
-  grantedAt: Timestamp;
-  expiresAt: Timestamp | null;       // Optional expiration
-}
-```
-
----
-
-## Feature Flags for Major Features
-
-### Core Features (MVP)
-
-| Flag ID | Name | Description | Default |
-|---------|------|-------------|---------|
-| `auth.google_oauth.enabled` | Google OAuth | Enable Google sign-in | true |
-| `auth.email_password.enabled` | Email/Password Auth | Enable email/password sign-in | true |
-| `accounts.create.enabled` | Create Accounts | Enable account creation | true |
-| `accounts.delete.enabled` | Delete Accounts | Enable account deletion | true |
-| `transactions.csv_import.enabled` | CSV Import | Enable bulk CSV import | true |
-| `transactions.delete.enabled` | Delete Transactions | Enable transaction deletion | true |
-| `transactions.export.enabled` | Export Transactions | Enable CSV export | true |
-| `dashboard.enabled` | Dashboard | Enable portfolio dashboard | true |
-| `calculators.simple_interest.enabled` | Simple Interest Calculator | Enable calculator | true |
-| `calculators.compound_interest.enabled` | Compound Interest Calculator | Enable calculator | true |
-| `admin.symbol_management.enabled` | Symbol Management | Enable admin symbol CRUD | true |
-| `admin.manual_price_updates.enabled` | Manual Price Updates | Enable manual price upload | true |
-
-### Experimental Features (Post-MVP)
-
-| Flag ID | Name | Description | Default |
-|---------|------|-------------|---------|
-| `transactions.manual_form.enabled` | Manual Transaction Form | Enable single transaction form | false |
-| `transactions.bulk_edit.enabled` | Bulk Edit | Enable bulk transaction editing | false |
-| `reports.performance.enabled` | Performance Reports | Enable performance analytics | false |
-| `reports.tax.enabled` | Tax Reports | Enable tax lot reporting | false |
-| `api.external_access.enabled` | External API | Enable external API access | false |
-| `integrations.plaid.enabled` | Plaid Integration | Enable Plaid broker sync | false |
-| `notifications.email.enabled` | Email Notifications | Enable email notifications | false |
-| `notifications.push.enabled` | Push Notifications | Enable push notifications (PWA) | false |
-
-### Emergency/Maintenance Flags
-
-| Flag ID | Name | Description | Default |
-|---------|------|-------------|---------|
-| `system.maintenance_mode.enabled` | Maintenance Mode | Disable writes, show maintenance banner | false |
-| `system.read_only_mode.enabled` | Read-Only Mode | Disable all writes | false |
-| `performance.rate_limiting.enabled` | Rate Limiting | Enable request rate limiting | true |
-| `performance.heavy_operations.enabled` | Heavy Operations | Allow resource-intensive operations | true |
-
----
-
-## Admin Feature Flag Management Interface
-
-### FR-ADMIN-401: Feature Flags Dashboard
-
-**Priority**: Should Have (MVP Month 4 or Post-MVP Month 5)
-
-**Description**: Admin interface to view and manage all feature flags
+### Admin Dashboard Implementation
 
 **UI Components**:
 

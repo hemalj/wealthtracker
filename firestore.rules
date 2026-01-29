@@ -1,128 +1,72 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ============================================
-    // Helper Functions
-    // ============================================
-
-    // Check if user is authenticated
+    
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
-
-    // Check if user owns the resource
+    
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-
-    // Check if user is admin
+    
     function isAdmin() {
-      return isAuthenticated() &&
+      return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
-    // ============================================
-    // Users Collection
-    // ============================================
-    // Users can only read/write their own profile
+    
+    // Users collection - users can only access their own data
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) &&
-                       // Users cannot change their own role
-                       (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
-      allow delete: if isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
-    // ============================================
-    // Accounts Collection
-    // ============================================
-    // Users can only access accounts they own
+    // Accounts collection (flat, root-level) - users can only access their own accounts
     match /accounts/{accountId} {
+      // Allow read if user owns the account (check userId field in document)
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow create if userId in request matches auth uid
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow update/delete if user owns the account
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // ============================================
-    // Transactions Collection
-    // ============================================
-    // Users can only access transactions they own
+    // Transactions collection (flat, root-level)
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // ============================================
-    // Holdings Collection
-    // ============================================
-    // Users can only access holdings they own
-    // Holdings are typically read-only (calculated by backend)
+    // Holdings collection (flat, root-level)
     match /holdings/{holdingId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAdmin(); // Only backend/admin can create
-      allow update: if isAdmin(); // Only backend/admin can update
-      allow delete: if isAdmin(); // Only backend/admin can delete
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // ============================================
-    // Symbols Collection (Stock/ETF Symbols)
-    // ============================================
-    // All authenticated users can read symbols
-    // Only admins can create/update/delete
+    // Portfolio snapshots collection
+    match /portfolioSnapshots/{snapshotId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Symbols collection - read-only for all authenticated users, write for admins only
     match /symbols/{symbolId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
-
-    // ============================================
-    // Prices Collection (Historical Price Data)
-    // ============================================
-    // All authenticated users can read prices
-    // Only admins can create/update (typically via Cloud Functions)
+    
+    // Prices collection - read-only for all authenticated users, write for admins only
     match /prices/{priceId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
-
-    // ============================================
-    // Audit Logs Collection
-    // ============================================
-    // Only admins can read audit logs
+    
+    // Audit logs - admin only
     match /audit_logs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin(); // Typically created by Cloud Functions
-      allow update: if false; // Logs should never be updated
-      allow delete: if false; // Logs should never be deleted
-    }
-
-    // ============================================
-    // Subscriptions Collection (Post-MVP)
-    // ============================================
-    // Users can read their own subscriptions
-    // Only backend/admin can create/update
-    match /subscriptions/{subscriptionId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    // ============================================
-    // Default Deny All
-    // ============================================
-    // Deny all other paths by default
-    match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }
