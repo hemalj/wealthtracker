@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import MainLayout from '@/components/layout/MainLayout'
 import AuthLayout from '@/components/layout/AuthLayout'
 import LoginPage from '@/pages/auth/LoginPage'
@@ -10,20 +11,6 @@ import AccountsPage from '@/pages/accounts/AccountsPage'
 import TransactionsPage from '@/pages/transactions/TransactionsPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import LoadingPage from '@/pages/LoadingPage'
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, loading } = useAuth()
-
-  if (loading) {
-    return <LoadingPage />
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <>{children}</>
-}
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth()

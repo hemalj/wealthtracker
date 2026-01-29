@@ -24,12 +24,23 @@ import type {
 // Root-level transactions collection (flat structure per data model)
 const transactionsCollection = collection(db, 'transactions')
 
+// Strip undefined values since Firestore rejects them
+function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = value
+    }
+  }
+  return result
+}
+
 // Create a new transaction
 export const createTransaction = async (
   userId: string,
   input: CreateTransactionInput
 ): Promise<Transaction> => {
-  const transactionData = {
+  const transactionData = stripUndefined({
     userId,
     accountId: input.accountId,
     symbol: input.symbol.toUpperCase(),
@@ -47,7 +58,7 @@ export const createTransaction = async (
     cashInLieu: input.cashInLieu,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  }
+  })
 
   const docRef = await addDoc(transactionsCollection, transactionData)
 
