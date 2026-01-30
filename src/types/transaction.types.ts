@@ -101,6 +101,7 @@ export interface CSVColumnMapping {
   currency: number
   fees?: number
   commission?: number
+  mer?: number
   notes?: number
 }
 

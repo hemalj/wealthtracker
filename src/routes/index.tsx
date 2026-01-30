@@ -9,6 +9,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 import AccountsPage from '@/pages/accounts/AccountsPage'
 import TransactionsPage from '@/pages/transactions/TransactionsPage'
+import ImportPage from '@/pages/transactions/ImportPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import LoadingPage from '@/pages/LoadingPage'
 
@@ -68,6 +69,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/accounts" element={<AccountsPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/transactions/import" element={<ImportPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 

@@ -120,6 +120,10 @@ Transaction currency is automatically determined by the selected symbol's exchan
 
 The currency value comes from the `cu` field in `symbols.json`, which is sourced from the EODHD `Currency` response field in the exchange symbol list API.
 
+### CSV Bulk Import (Opposite Flow)
+
+In CSV bulk import, currency works in reverse — the user provides currency in the CSV, and it drives exchange determination. This is because the same symbol can exist on multiple exchanges (e.g., SHOP trades on both US and Canadian exchanges). Currency disambiguates: `SHOP` + `CAD` = Canadian exchange, `SHOP` + `USD` = US exchange. See FR-TRANS-203 in feature specifications.
+
 ## Migration Path (Month 4)
 
 When implementing the full EODHD integration:

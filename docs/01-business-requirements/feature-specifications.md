@@ -208,48 +208,52 @@ This document provides detailed functional specifications for all WealthTracker 
 - Clear error messages for invalid files
 
 **FR-TRANS-002**: Column Mapping Interface
-- Preview first 10 rows from CSV
+- Preview first 5 rows from CSV
+- **Account**: Selected from a dropdown of existing accounts (not mapped from CSV). All imported transactions are assigned to the selected account.
 - User maps CSV columns to system fields:
-  - **Required**: Date, Account, Symbol, Type, Quantity (for Buy/Sell/Initial/Split), Unit Price (for Buy/Sell/Initial)
-  - **Optional**: Total Amount, Currency, Fees, Commission, MER, Notes, Split Ratio
-- Auto-detect common column names (Date, Symbol, Type, Qty, Price, Amount, Account, etc.)
-- Save/load mapping templates for reuse
+  - **Required**: Date, Symbol, Type, Currency
+  - **Conditionally Required**: Quantity (for Buy/Sell/Initial), Unit Price (for Buy/Sell/Initial), Total Amount (for Dividend, only if Quantity + Unit Price not provided)
+  - **Optional**: Fees, Commission, MER, Notes
+- Auto-detect common column names with aliases (e.g., "Qty"→Quantity, "Ticker"→Symbol, "Price"→Unit Price, "CCY"→Currency)
 - Support for multiple date formats (ISO 8601, MM/DD/YYYY, DD/MM/YYYY, etc.)
 - Currency code recognition (USD, CAD, EUR, GBP, INR)
 
 **FR-TRANS-003**: Data Validation & Preview
 - Validate all rows before import:
   - Date format and not in future
-  - Account exists or can be created
-  - Symbol format valid
-  - Transaction type valid (Buy, Sell, Dividend, Split, Initial Position)
-  - Quantity > 0 where required
-  - Unit Price > 0 where required
-  - Split ratio format correct (e.g., "2:1", "1:5")
-  - Total Amount > 0 for Dividends
+  - Symbol format valid (max 20 characters)
+  - Transaction type valid (Buy, Sell, Dividend, Initial Position)
+  - Quantity non-zero where required (negative values accepted for sells — see CSV Parsing Rules below)
+  - Unit Price non-zero where required
+  - Total Amount non-zero for Dividends (only when Quantity + Unit Price not provided)
+  - Currency is a valid code
+  - Fees, Commission, MER >= 0 when present; empty defaults to 0
 - Preview table shows validation status per row:
-  - Green: Valid, ready to import
-  - Yellow: Warning (e.g., symbol not in database, will be added)
-  - Red: Error, must be fixed or skipped
-- User can edit data directly in preview table
+  - Green chip: Valid, ready to import
+  - Red chip: Error, will be skipped
+  - Warning text: Non-critical issues (e.g., currency not in standard list)
 - Allow partial import (import valid rows, skip errors)
-- Download error report CSV with detailed error descriptions
+- "Show Errors Only" toggle to filter the preview table
+
+**CSV Field Parsing Rules**:
+- **Currency formatting**: Numeric fields accept currency-formatted values. Dollar signs (`$`) and commas (`,`) are stripped before parsing (e.g., `$1,250.50` → `1250.50`).
+- **Negative sell quantities**: Sell CSVs from brokers often export quantity as negative (e.g., `-50`). The system takes the absolute value since the transaction `type` field determines direction, not the sign. All quantities are stored as positive.
+- **Negative unit prices**: Same as quantity — absolute value is used for storage.
+- **Empty fees/commission**: When fees or commission columns are empty or unmapped, they default to `0` (not an error).
+- **Dividend amount rules**:
+  - If both Quantity and Unit Price are provided and valid, they are used as the dividend amount (totalAmount is ignored even if mapped).
+  - If Quantity or Unit Price is missing, Total Amount is required as the dividend amount.
+  - Non-dividend transactions (Buy/Sell/Initial Position) never use Total Amount, even if mapped in the CSV.
 
 **FR-TRANS-004**: Symbol & Account Disambiguation
 - **Symbol Disambiguation**:
-  - Auto-detect duplicate symbols (e.g., SHOP on NASDAQ vs TSX)
-  - User provides mapping: Symbol + Currency → Exchange
-  - System saves symbol-to-exchange mapping permanently
-  - Apply mapping to all matching rows in current and future imports
-  - "Resolve All" button to fix all ambiguous symbols at once
-- **Account Matching**:
-  - Auto-match account names (case-insensitive, fuzzy matching)
-  - Suggest close matches if exact match not found
-  - Options if account not found:
-    1. Create new account on-the-fly (name, type, currency)
-    2. Map to existing account
-    3. Skip transactions for this account
-  - Bulk account mapping interface
+  - Currency in the CSV drives exchange determination (see FR-TRANS-203)
+  - Same ticker on different exchanges is disambiguated by currency (e.g., SHOP + CAD = TSX, SHOP + USD = US)
+- **Account Selection**:
+  - User selects target account from a dropdown of existing accounts before importing
+  - All transactions in the CSV are imported into the selected account
+  - Account must be selected before the CSV upload step is enabled
+  - Account is not a column in the CSV — it is a page-level selection
 
 **FR-TRANS-005**: Import Processing & Progress
 - Process in batches (500 rows per batch for performance)
@@ -409,6 +413,7 @@ This document provides detailed functional specifications for all WealthTracker 
 - **Required Fields**: Symbol, Quantity, Unit Price, Date, Account
 - **Optional Fields**: Fees, Commission
 - **Calculation**: Total = (Quantity × Unit Price) - Fees - Commission
+- **Storage**: Quantity and Unit Price are always stored as positive values. The transaction `type` field ("sell") determines direction. CSV imports with negative sell quantities are converted to positive via absolute value.
 - **Behavior**:
   - Decreases position quantity
   - Calculates realized gain/loss using FIFO (First-In-First-Out) method
@@ -416,8 +421,10 @@ This document provides detailed functional specifications for all WealthTracker 
 
 **Dividend Transaction**:
 - **Purpose**: Record dividend/distribution income
-- **Required Fields**: Symbol, Total Amount, Date, Account
-- **Optional Fields**: None (quantity and unit price not applicable)
+- **Required Fields**: Symbol, Date, Account, and one of:
+  - Total Amount (direct dividend amount), OR
+  - Quantity + Unit Price (dividend per share × shares)
+- **Amount Resolution**: If both Quantity + Unit Price and Total Amount are provided, Quantity × Unit Price is used and Total Amount is ignored.
 - **Behavior**:
   - Records dividend income (does not affect position quantity or cost basis)
   - Links to symbol for dividend history tracking
@@ -453,22 +460,22 @@ This document provides detailed functional specifications for all WealthTracker 
 
 **FR-TRANS-202**: Field Definitions
 
-| Field | Type | Required For | Description |
-|-------|------|-------------|-------------|
-| Date | Date | All | Transaction date (ISO 8601 format, cannot be future) |
-| Account | String | All | Account name (must match existing account) |
-| Symbol | String | All | Stock/ETF ticker symbol (EODHD format: AAPL.US, SHOP.TO) |
-| Transaction Type | Enum | All | Buy, Sell, Dividend, Split, Initial Position |
-| Quantity | Number | Buy, Sell, Initial, Split | Number of shares/units (must be > 0) |
-| Unit Price | Number | Buy, Sell, Initial | Price per share/unit (must be > 0) |
-| Total Amount | Number | Dividend | Total dividend received (must be > 0) |
-| Currency | String | All | ISO 4217 currency code, auto-determined from symbol's exchange (see FR-TRANS-203) |
-| Fees | Number | Optional | Other transaction fees (brokerage fees, wire fees, etc.) |
-| Commission | Number | Optional | Trading commission paid to broker |
-| MER | Number | Optional | Management Expense Ratio deduction (for mutual funds/ETFs) |
-| Notes | String | Optional | User notes (max 500 characters) |
-| Split Ratio | String | Split only | Format: "new:old" (e.g., "2:1", "1:5") |
-| Cash in Lieu | Number | Reverse Split | Cash received for fractional shares (optional) |
+| Field | Type | Required For | Description | CSV Parsing |
+|-------|------|-------------|-------------|-------------|
+| Date | Date | All | Transaction date (ISO 8601 format, cannot be future) | Multiple formats accepted |
+| Account | — | — | Selected from dropdown (not a CSV column). See FR-TRANS-004. | N/A — page-level selection |
+| Symbol | String | All | Stock/ETF ticker symbol (max 20 chars) | Uppercased on import |
+| Transaction Type | Enum | All | Buy, Sell, Dividend, Initial Position | Case-insensitive |
+| Quantity | Number | Buy, Sell, Initial | Number of shares/units (non-zero). Stored as positive. | Absolute value taken; `$`/`,` stripped |
+| Unit Price | Number | Buy, Sell, Initial | Price per share/unit (non-zero). Stored as positive. | Absolute value taken; `$`/`,` stripped |
+| Total Amount | Number | Dividend (if no Qty+Price) | Dividend amount (non-zero). Ignored for non-dividend types. | `$`/`,` stripped |
+| Currency | String | All | ISO 4217 code. In CSV: drives exchange determination (see FR-TRANS-203). In manual form: auto-determined from symbol. | Uppercased on import |
+| Fees | Number | Optional | Other transaction fees (>= 0) | Defaults to 0 if empty; `$`/`,` stripped |
+| Commission | Number | Optional | Trading commission (>= 0) | Defaults to 0 if empty; `$`/`,` stripped |
+| MER | Number | Optional | Management Expense Ratio deduction (>= 0). Recorded only, not in cost basis. | `$`/`,` stripped |
+| Notes | String | Optional | User notes (max 500 characters) | Truncated to 500 chars |
+| Split Ratio | String | Split only | Format: "new:old" (e.g., "2:1", "1:5") | Not in CSV import |
+| Cash in Lieu | Number | Reverse Split | Cash received for fractional shares (optional) | Not in CSV import |
 
 **Acceptance Criteria**:
 - ✅ All transaction types validated correctly during CSV import
@@ -489,12 +496,17 @@ Currency is automatically determined by the symbol's exchange. Users do not manu
 | V (TSX Venture Exchange) | CAD |
 | NEO (NEO Exchange) | CAD |
 
-**Rules**:
+**Rules — Manual Transaction Form**:
 - When a symbol is selected from the autocomplete dropdown, the currency is set automatically based on the symbol's exchange
 - When a symbol is free-typed (not matched in the static data), currency defaults to USD
 - Currency is not editable by the user in the transaction form
 - Currency is displayed in the transaction list for visibility
-- For CSV import: if currency column is omitted, derive from the symbol's exchange using the mapping above
+
+**Rules — CSV Bulk Import** (opposite flow):
+- Currency is a **required** column in CSV import
+- Currency drives exchange determination since the same symbol can exist on multiple exchanges (e.g., SHOP trades on both US and Canadian exchanges)
+- `SHOP` + `CAD` = SHOP on Toronto/Canadian exchange; `SHOP` + `USD` = SHOP on US exchange
+- Currency is stored directly from the CSV value
 
 ---
 

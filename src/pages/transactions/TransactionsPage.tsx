@@ -17,8 +17,13 @@ import {
   Alert,
   Skeleton,
 } from '@mui/material'
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material'
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Upload as UploadIcon,
+} from '@mui/icons-material'
 import { format } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 import { TransactionForm } from '@/components/forms/TransactionForm'
 import {
   useTransactions,
@@ -30,6 +35,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { CreateTransactionInput, Transaction } from '@/types'
 
 const TransactionsPage = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { data: transactions, isLoading, error } = useTransactions()
   const { data: accounts } = useAccounts()
@@ -91,13 +97,22 @@ const TransactionsPage = () => {
     <Container maxWidth="lg">
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">Transactions</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setDialogOpen(true)}
-        >
-          Add Transaction
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => navigate('/transactions/import')}
+          >
+            Import CSV
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setDialogOpen(true)}
+          >
+            Add Transaction
+          </Button>
+        </Box>
       </Box>
 
       {formError && (

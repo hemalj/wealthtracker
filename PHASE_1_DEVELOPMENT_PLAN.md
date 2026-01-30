@@ -2864,12 +2864,22 @@ Add route in `src/App.tsx`:
 
 **Deliverable**: End-to-end CSV import working
 
-**Week 1 Summary**:
-- ✅ CSV upload and parsing
-- ✅ Column mapping with auto-detection
-- ✅ Data validation with preview
-- ✅ Batch import processing
+**Week 1 Summary ✅ (Implemented)**:
+- ✅ CSV upload and parsing (Papa Parse)
+- ✅ Column mapping with auto-detection (aliases for common header names)
+- ✅ Data validation with preview (row-level errors/warnings)
+- ✅ Batch import processing (via `useBulkCreateTransactions()`)
 - ✅ Error handling and reporting
+- ✅ MER field supported in CSV import (recorded as-is, not in cost basis)
+- ✅ Currency is required in CSV (drives exchange determination — opposite of manual form)
+- ✅ All numeric fields support fractional/decimal values
+- ✅ Import CSV button on Transactions page, route at `/transactions/import`
+- ✅ Account selected from dropdown (not CSV column) — all transactions import to selected account
+- ✅ Currency-formatted numbers accepted ($, commas stripped: `$1,250.50` → `1250.50`)
+- ✅ Negative sell quantities accepted — absolute value stored (type field determines direction)
+- ✅ Dividend amount resolution: Quantity × Unit Price preferred; Total Amount used as fallback
+- ✅ Non-dividend transactions never use Total Amount even if mapped in CSV
+- ✅ Empty fees/commission default to 0 (not treated as validation errors)
 
 ---
 
