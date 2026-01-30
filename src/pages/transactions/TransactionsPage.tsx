@@ -120,9 +120,12 @@ const TransactionsPage = () => {
               <TableCell>Account</TableCell>
               <TableCell>Symbol</TableCell>
               <TableCell>Type</TableCell>
+              <TableCell>Currency</TableCell>
               <TableCell align="right">Quantity</TableCell>
               <TableCell align="right">Unit Price</TableCell>
               <TableCell align="right">Total</TableCell>
+              <TableCell align="right">Commission</TableCell>
+              <TableCell align="right">MER</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -135,11 +138,18 @@ const TransactionsPage = () => {
                 <TableCell>
                   <Chip label={transaction.type} size="small" />
                 </TableCell>
+                <TableCell>{transaction.currency}</TableCell>
                 <TableCell align="right">{transaction.quantity || '-'}</TableCell>
                 <TableCell align="right">
                   {transaction.unitPrice ? `$${transaction.unitPrice.toFixed(2)}` : '-'}
                 </TableCell>
                 <TableCell align="right">{formatTotal(transaction)}</TableCell>
+                <TableCell align="right">
+                  {transaction.commission ? `$${transaction.commission.toFixed(2)}` : '-'}
+                </TableCell>
+                <TableCell align="right">
+                  {transaction.mer ? `${transaction.mer.toFixed(2)}%` : '-'}
+                </TableCell>
                 <TableCell align="right">
                   <IconButton size="small" onClick={() => handleDelete(transaction.id)}>
                     <DeleteIcon />

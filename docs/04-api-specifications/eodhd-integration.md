@@ -195,6 +195,8 @@ GET https://eodhd.com/api/exchange-symbol-list/US?api_token=YOUR_API_KEY&fmt=jso
 - Build master symbol database
 - Weekly sync to update symbol list
 
+**Currency Mapping**: The `Currency` field from the EODHD response is used as the transaction currency when a user selects a symbol. This establishes the exchange-to-currency mapping: US exchange symbols trade in USD, Canadian exchange symbols (TO, V, NEO) trade in CAD.
+
 **Cache Strategy**: Refresh weekly
 **Cost**: 1 API call per exchange
 

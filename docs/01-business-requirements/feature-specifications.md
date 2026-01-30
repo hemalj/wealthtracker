@@ -462,7 +462,7 @@ This document provides detailed functional specifications for all WealthTracker 
 | Quantity | Number | Buy, Sell, Initial, Split | Number of shares/units (must be > 0) |
 | Unit Price | Number | Buy, Sell, Initial | Price per share/unit (must be > 0) |
 | Total Amount | Number | Dividend | Total dividend received (must be > 0) |
-| Currency | String | All | ISO 4217 currency code (USD, CAD, EUR, GBP, INR) |
+| Currency | String | All | ISO 4217 currency code, auto-determined from symbol's exchange (see FR-TRANS-203) |
 | Fees | Number | Optional | Other transaction fees (brokerage fees, wire fees, etc.) |
 | Commission | Number | Optional | Trading commission paid to broker |
 | MER | Number | Optional | Management Expense Ratio deduction (for mutual funds/ETFs) |
@@ -477,6 +477,24 @@ This document provides detailed functional specifications for all WealthTracker 
 - ✅ Forward splits increase quantity, maintain cost basis
 - ✅ Reverse splits handle fractional shares correctly
 - ✅ Dividends tracked separately from cost basis
+
+**FR-TRANS-203**: Transaction Currency Determination
+
+Currency is automatically determined by the symbol's exchange. Users do not manually select a currency in the transaction form.
+
+| Exchange | Currency |
+|----------|----------|
+| US (NYSE, NASDAQ, OTC) | USD |
+| TO (Toronto Exchange / TSX) | CAD |
+| V (TSX Venture Exchange) | CAD |
+| NEO (NEO Exchange) | CAD |
+
+**Rules**:
+- When a symbol is selected from the autocomplete dropdown, the currency is set automatically based on the symbol's exchange
+- When a symbol is free-typed (not matched in the static data), currency defaults to USD
+- Currency is not editable by the user in the transaction form
+- Currency is displayed in the transaction list for visibility
+- For CSV import: if currency column is omitted, derive from the symbol's exchange using the mapping above
 
 ---
 

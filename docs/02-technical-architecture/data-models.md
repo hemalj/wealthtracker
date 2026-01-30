@@ -253,7 +253,7 @@ interface Transaction {
   symbolId: string | null;           // Reference to symbols collection
   symbolName: string;                // "Apple Inc."
   exchange: string;                  // "NASDAQ"
-  currency: string;                  // "USD"
+  currency: string;                  // "USD" — Determined by symbol's exchange (US=USD, TO/V/NEO=CAD). Not user-editable.
 
   // Transaction amounts
   quantity: number | null;           // 100 (null for dividends)

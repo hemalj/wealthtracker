@@ -2146,8 +2146,31 @@ git push
 - ✅ Form validation
 - ✅ Feature flags system
 - ✅ Testing setup
+- ✅ Commission & MER fields on transaction form (renamed from Fees)
+- ✅ Fractional value support for all numeric inputs
+- ✅ Static symbol autocomplete with EODHD data
+- ✅ Currency auto-assignment from symbol exchange (FR-TRANS-203)
 
 **Ready for Month 2**: Bulk CSV Import, Transaction List Enhancements, Dashboard
+
+---
+
+## Month 1 Addition: Static Symbol Autocomplete ✅
+
+**Completed**: Symbol autocomplete on the transaction form using a static JSON export of US and Canadian exchange symbols from EODHD.
+
+**Exchanges**: US (NYSE/NASDAQ/OTC), TO (Toronto), V (TSX Venture), NEO
+
+**Implementation**:
+- `scripts/fetch-symbols.ts` — One-time script to fetch symbol data from EODHD API
+- `src/data/symbols.json` — Static symbol data (compact format, code-split by Vite)
+- `src/hooks/useSymbolSearch.ts` — Lazy-load + tiered search (exact → prefix → name)
+- `src/components/forms/SymbolAutocomplete.tsx` — MUI Autocomplete (freeSolo) wrapper
+- TransactionForm symbol field uses autocomplete with free-text fallback
+
+**Currency Auto-Assignment**: Transaction currency is automatically determined by the symbol's exchange (US→USD, TO/V/NEO→CAD). No manual currency selection in the form. Currency is displayed in the transaction list. See FR-TRANS-203 in feature specifications.
+
+**Temporary**: Will be replaced by live EODHD API integration and `symbols` Firestore collection in Month 4. See `docs/03-implementation/symbol-autocomplete.md` for details.
 
 ---
 

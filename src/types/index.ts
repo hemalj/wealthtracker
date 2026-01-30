@@ -42,3 +42,6 @@ export {
 
 // Re-export Currency from account types (used in multiple places)
 export type { Currency } from './account.types'
+
+// Symbol types (static autocomplete data)
+export type { SymbolEntry, SymbolOption } from './symbol.types'

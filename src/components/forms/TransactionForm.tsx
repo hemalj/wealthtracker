@@ -16,6 +16,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import type { CreateTransactionInput } from '@/types/transaction.types'
 import type { Account } from '@/types/account.types'
+import { SymbolAutocomplete } from './SymbolAutocomplete'
 
 const transactionSchema = z.object({
   accountId: z.string().min(1, 'Account is required'),
@@ -26,8 +27,8 @@ const transactionSchema = z.object({
   unitPrice: z.number().positive().optional(),
   totalAmount: z.number().positive().optional(),
   currency: z.string().min(3).max(3),
-  fees: z.number().min(0).optional(),
   commission: z.number().min(0).optional(),
+  mer: z.number().min(0).optional(),
   notes: z.string().max(500).optional(),
 })
 
@@ -52,6 +53,7 @@ export function TransactionForm({
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -95,14 +97,14 @@ export function TransactionForm({
           name="symbol"
           control={control}
           render={({ field }) => (
-            <TextField
-              {...field}
-              fullWidth
-              label="Symbol"
+            <SymbolAutocomplete
+              value={field.value}
+              onChange={(val, currency) => {
+                field.onChange(val)
+                if (currency) setValue('currency', currency)
+              }}
               error={!!errors.symbol}
               helperText={errors.symbol?.message}
-              margin="normal"
-              required
             />
           )}
         />
@@ -157,6 +159,7 @@ export function TransactionForm({
                   helperText={errors.quantity?.message}
                   margin="normal"
                   required
+                  slotProps={{ htmlInput: { step: 'any' } }}
                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
                 />
               )}
@@ -175,6 +178,7 @@ export function TransactionForm({
                   helperText={errors.unitPrice?.message}
                   margin="normal"
                   required
+                  slotProps={{ htmlInput: { step: 'any' } }}
                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
                 />
               )}
@@ -196,6 +200,7 @@ export function TransactionForm({
                 helperText={errors.totalAmount?.message}
                 margin="normal"
                 required
+                slotProps={{ htmlInput: { step: 'any' } }}
                 onChange={(e) => field.onChange(parseFloat(e.target.value))}
               />
             )}
@@ -203,15 +208,32 @@ export function TransactionForm({
         )}
 
         <Controller
-          name="fees"
+          name="commission"
           control={control}
           render={({ field }) => (
             <TextField
               {...field}
               fullWidth
-              label="Fees (Optional)"
+              label="Commission (Optional)"
               type="number"
               margin="normal"
+              slotProps={{ htmlInput: { step: 'any' } }}
+              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+            />
+          )}
+        />
+
+        <Controller
+          name="mer"
+          control={control}
+          render={({ field }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="MER (Optional)"
+              type="number"
+              margin="normal"
+              slotProps={{ htmlInput: { step: 'any' } }}
               onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
             />
           )}
