@@ -1,0 +1,20 @@
+date,transaction,description,amount,balance,currency
+2025-02-03,CONT,Contribution (executed at 2025-02-03),2000,2044.9,CAD
+2025-02-04,BUY,ENCL - Global X Enhanced Canadian Oil and Gas Equity Covered Call ETF: Bought 20.0000 shares (executed at 2025-02-03),-369.8,1675.1,CAD
+2025-02-04,BUY,HHIS - Harvest Diversified High Income Shares ETF - Class A: Bought 50.0000 shares (executed at 2025-02-03),-634.5,1040.6,CAD
+2025-02-07,BUY,MSTY - Harvest MicroStrategy High Income Shares ETF - Class A: Bought 50.0000 shares (executed at 2025-02-06),-579,461.6,CAD
+2025-02-07,NRT,Non-resident tax (executed at 2025-02-07),-2.25,474.37,CAD
+2025-02-07,DIV,"CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Cash dividend distribution, received on 2025-02-07, record date of 2025-02-06, FX Rate: 1.4342",15.02,474.37,CAD
+2025-02-07,DIV,"CALL - Evolve US Banks Enhanced Yield Fund Hedged: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",6.25,480.62,CAD
+2025-02-07,DIV,"UTES - Evolve Canadian Utilities Enhanced Yield Index Fund - Unhedged ETF: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",8.28,488.9,CAD
+2025-02-07,DIV,"QQCL - Global X Enhanced Nasdaq-100 Covered Call ETF: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",2.07,490.97,CAD
+2025-02-07,DIV,"ENCL - Global X Enhanced Canadian Oil and Gas Equity Covered Call ETF: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",11.93,502.9,CAD
+2025-02-07,DIV,"BANK - Evolve Canadian Banks And Lifecos Enhanced Yield Index Fund - Unhedged: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",24.75,527.65,CAD
+2025-02-07,DIV,"LLHE - Harvest Eli Lilly Enhanced High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",12.96,540.61,CAD
+2025-02-07,DIV,"NVHE - Harvest NVIDIA Enhanced High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",12.32,552.93,CAD
+2025-02-07,DIV,"HHLE - Harvest Healthcare Leaders Enhanced Income ETF: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",4.67,557.6,CAD
+2025-02-07,DIV,"HPYT - Harvest Premium Yield Treasury ETF - Class A: Cash dividend distribution, received on 2025-02-07, record date of 2025-01-31",13.5,571.1,CAD
+2025-02-11,BUY,CONY - Harvest Coinbase High Income Shares ETF - Class A: Bought 20.0000 shares (executed at 2025-02-10),-263,308.1,CAD
+2025-02-12,BUY,"CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Bought 10.0000 shares (executed at 2025-02-11), FX Rate: 1.4585",-175.76,132.34,CAD
+2025-02-14,BUY,MSTY - Harvest MicroStrategy High Income Shares ETF - Class A: Bought 11.0000 shares (executed at 2025-02-13),-125.29,7.05,CAD
+2025-02-14,DIV,"RS - Real Estate Split Corp: Cash dividend distribution, received on 2025-02-14, record date of 2025-01-31",6.5,13.55,CAD

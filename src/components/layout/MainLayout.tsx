@@ -26,7 +26,7 @@ const MainLayout = () => {
         }}
       >
         <Toolbar />
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 1 }}>
           <Outlet />
         </Box>
       </Box>

@@ -1,0 +1,27 @@
+date,transaction,description,amount,balance,currency
+2025-01-08,CONT,Contribution (executed at 2025-01-08),2100,2107.91,CAD
+2025-01-08,DIV,"ENCL - Global X Enhanced Canadian Oil and Gas Equity Covered Call ETF: Cash dividend distribution, received on 2025-01-08, record date of 2024-12-31",29,2136.91,CAD
+2025-01-08,DIV,"BANK - Evolve Canadian Banks And Lifecos Enhanced Yield Index Fund - Unhedged: Cash dividend distribution, received on 2025-01-08, record date of 2024-12-31",11,2147.91,CAD
+2025-01-08,DIV,"UTES - Evolve Canadian Utilities Enhanced Yield Index Fund - Unhedged ETF: Cash dividend distribution, received on 2025-01-08, record date of 2024-12-31",6.9,2154.81,CAD
+2025-01-09,BUY,BANK - Evolve Canadian Banks And Lifecos Enhanced Yield Index Fund - Unhedged: Bought 100.0000 shares (executed at 2025-01-08),-797,1357.81,CAD
+2025-01-09,BUY,CALL - Evolve US Banks Enhanced Yield Fund Hedged: Bought 50.0000 shares (executed at 2025-01-08),-670.5,687.31,CAD
+2025-01-09,BUY,NVHE - Harvest NVIDIA Enhanced High Income Shares ETF - Class A: Bought 25.0000 shares (executed at 2025-01-08),-312,375.31,CAD
+2025-01-09,DIV,"LLHE - Harvest Eli Lilly Enhanced High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-01-09, record date of 2024-12-31",9,384.31,CAD
+2025-01-09,DIV,"HHLE - Harvest Healthcare Leaders Enhanced Income ETF: Cash dividend distribution, received on 2025-01-09, record date of 2024-12-31",3.46,387.77,CAD
+2025-01-10,BUY,NVHE - Harvest NVIDIA Enhanced High Income Shares ETF - Class A: Bought 25.0000 shares (executed at 2025-01-09),-313.75,74.02,CAD
+2025-01-13,CONT,Contribution (executed at 2025-01-13),2000,2074.02,CAD
+2025-01-14,BUY,NVHE - Harvest NVIDIA Enhanced High Income Shares ETF - Class A: Bought 6.0000 shares (executed at 2025-01-13),-70.5,2003.52,CAD
+2025-01-14,BUY,UTES - Evolve Canadian Utilities Enhanced Yield Index Fund - Unhedged ETF: Bought 10.0000 shares (executed at 2025-01-13),-90,1913.52,CAD
+2025-01-14,BUY,RS - Real Estate Split Corp: Bought 50.0000 shares (executed at 2025-01-13),-549.5,1364.02,CAD
+2025-01-14,BUY,BANK - Evolve Canadian Banks And Lifecos Enhanced Yield Index Fund - Unhedged: Bought 25.0000 shares (executed at 2025-01-13),-196.25,1167.77,CAD
+2025-01-15,BUY,HPYT - Harvest Premium Yield Treasury ETF - Class A: Bought 90.0000 shares (executed at 2025-01-14),-846,321.77,CAD
+2025-01-15,BUY,HHLE - Harvest Healthcare Leaders Enhanced Income ETF: Bought 13.0000 shares (executed at 2025-01-14),-125.19,196.58,CAD
+2025-01-15,BUY,QQCL - Global X Enhanced Nasdaq-100 Covered Call ETF: Bought 4.0000 shares (executed at 2025-01-14),-99.28,97.3,CAD
+2025-01-15,BUY,QQCL - Global X Enhanced Nasdaq-100 Covered Call ETF: Bought 3.0000 shares (executed at 2025-01-14),-74.25,23.05,CAD
+2025-01-17,BUY,LLHE - Harvest Eli Lilly Enhanced High Income Shares ETF - Class A: Bought 2.0000 shares (executed at 2025-01-16),-18.82,4.23,CAD
+2025-01-17,CONT,Contribution (executed at 2025-01-17),900,904.23,CAD
+2025-01-21,BUY,"CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Bought 10.0000 shares (executed at 2025-01-17), FX Rate: 1.4741",-202.33,701.9,CAD
+2025-01-21,BUY,LLHE - Harvest Eli Lilly Enhanced High Income Shares ETF - Class A: Bought 20.0000 shares (executed at 2025-01-20),-181,520.9,CAD
+2025-01-21,BUY,HHIS - Harvest Diversified High Income Shares ETF - Class A: Bought 20.0000 shares (executed at 2025-01-20),-273,247.9,CAD
+2025-01-22,SELL,ENCL - Global X Enhanced Canadian Oil and Gas Equity Covered Call ETF: Sold 55.0000 shares (executed at 2025-01-21),1067,1314.9,CAD
+2025-01-22,BUY,HHIS - Harvest Diversified High Income Shares ETF - Class A: Bought 100.0000 shares (executed at 2025-01-21),-1270,44.9,CAD

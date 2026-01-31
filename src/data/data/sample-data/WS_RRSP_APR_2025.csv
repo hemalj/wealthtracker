@@ -1,0 +1,6 @@
+"date","transaction","description","amount","balance","currency"
+"2025-04-04","DIV","CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Cash dividend distribution, received on 2025-04-04, record date of 2025-04-03, FX Rate: 1.4272","6.25","59.49","CAD"
+"2025-04-14","TRFOUT","INTC - Intel Corporation: Transfer of 25.0000 shares out of the account (executed at 2025-04-14)","0.0","59.49","INTC"
+"2025-04-14","TRFOUT","CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Transfer of 10.0000 shares out of the account (executed at 2025-04-14)","0.0","59.49","CONY"
+"2025-04-24","TRFOUT","TSLA - Tesla Inc: Transfer of 3.0000 shares out of the account (executed at 2025-04-24)","0.0","59.49","TSLA"
+"2025-04-24","TRFOUT","AMZN - Amazon.com Inc.: Transfer of 2.0000 shares out of the account (executed at 2025-04-24)","0.0","59.49","AMZN"

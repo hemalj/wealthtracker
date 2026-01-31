@@ -1,0 +1,34 @@
+date,transaction,description,amount,balance,currency
+2025-03-07,DIV,"CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Cash dividend distribution, received on 2025-03-07, record date of 2025-03-06, FX Rate: 1.4453",17.32,28.27,CAD
+2025-03-07,NRT,Non-resident tax (executed at 2025-03-07),-2.6,28.27,CAD
+2025-03-07,DIV,"UTES - Evolve Canadian Utilities Enhanced Yield Index Fund - Unhedged ETF: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",8.28,36.55,CAD
+2025-03-07,DIV,"CALL - Evolve US Banks Enhanced Yield Fund Hedged: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",6.25,42.8,CAD
+2025-03-07,DIV,"QQCL - Global X Enhanced Nasdaq-100 Covered Call ETF: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",2.07,44.87,CAD
+2025-03-07,DIV,"BANK - Evolve Canadian Banks And Lifecos Enhanced Yield Index Fund - Unhedged: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",24.75,69.62,CAD
+2025-03-07,DIV,"LLHE - Harvest Eli Lilly Enhanced High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",12.96,82.58,CAD
+2025-03-07,DIV,"ENCL - Global X Enhanced Canadian Oil and Gas Equity Covered Call ETF: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",17.23,99.81,CAD
+2025-03-07,DIV,"CONY - Harvest Coinbase High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",6,105.81,CAD
+2025-03-07,DIV,"HHLE - Harvest Healthcare Leaders Enhanced Income ETF: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",4.67,110.48,CAD
+2025-03-07,DIV,"NVHE - Harvest NVIDIA Enhanced High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",12.32,122.8,CAD
+2025-03-07,DIV,"MSTY - Harvest MicroStrategy High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",24.4,147.2,CAD
+2025-03-07,DIV,"HHIS - Harvest Diversified High Income Shares ETF - Class A: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",42.5,189.7,CAD
+2025-03-07,DIV,"HPYT - Harvest Premium Yield Treasury ETF - Class A: Cash dividend distribution, received on 2025-03-07, record date of 2025-02-28",13.5,203.2,CAD
+2025-03-14,DIV,"RS - Real Estate Split Corp: Cash dividend distribution, received on 2025-03-14, record date of 2025-02-28",6.5,209.7,CAD
+2025-03-21,TRFOUT,HHIS - Harvest Diversified High Income Shares ETF - Class A: Transfer of 170.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,CALL - Evolve US Banks Enhanced Yield Fund Hedged: Transfer of 50.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,LLHE - Harvest Eli Lilly Enhanced High Income Shares ETF - Class A: Transfer of 72.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,TSLA - Tesla Inc: Transfer of 15.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,CONY - Tidal Trust II - Yieldmax Coin Option Income Strategy ETF: Transfer of 20.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,NVHE - Harvest NVIDIA Enhanced High Income Shares ETF - Class A: Transfer of 56.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,HPYT - Harvest Premium Yield Treasury ETF - Class A: Transfer of 90.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,CONY - Harvest Coinbase High Income Shares ETF - Class A: Transfer of 20.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,HHLE - Harvest Healthcare Leaders Enhanced Income ETF: Transfer of 50.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,MSTY - Harvest MicroStrategy High Income Shares ETF - Class A: Transfer of 61.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,BANK - Evolve Canadian Banks And Lifecos Enhanced Yield Index Fund - Unhedged: Transfer of 225.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,RIVN - Rivian Automotive Inc (Class A): Transfer of 40.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,RS - Real Estate Split Corp: Transfer of 50.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,UTES - Evolve Canadian Utilities Enhanced Yield Index Fund - Unhedged ETF: Transfer of 60.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,QQCL - Global X Enhanced Nasdaq-100 Covered Call ETF: Transfer of 7.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,LCID - Lucid Group Inc: Transfer of 25.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUT,ENCL - Global X Enhanced Canadian Oil and Gas Equity Covered Call ETF: Transfer of 65.0000 shares out of the account (executed at 2025-03-21),0,209.7,CAD
+2025-03-21,TRFOUTTF,Tax-free money transfer out of the account (executed at 2025-03-21),-13.55,196.15,CAD

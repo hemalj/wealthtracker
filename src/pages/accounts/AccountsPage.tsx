@@ -16,6 +16,11 @@ import {
   Chip,
   Alert,
   Skeleton,
+  Card,
+  CardContent,
+  Stack,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { AccountForm } from '@/components/forms/AccountForm'
@@ -39,6 +44,9 @@ const AccountsPage = () => {
   const createMutation = useCreateAccount()
   const updateMutation = useUpdateAccount()
   const deleteMutation = useDeleteAccount()
+
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
@@ -101,11 +109,40 @@ const AccountsPage = () => {
 
   return (
     <Container maxWidth="lg">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Accounts</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
-          Add Account
-        </Button>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        gap={1}
+        mb={3}
+      >
+        <Typography
+          variant={isMobile ? 'h6' : 'h4'}
+          noWrap
+          sx={isMobile ? { fontSize: '1.5rem' } : undefined}
+        >
+          Accounts
+        </Typography>
+        <Box flexShrink={0}>
+          {isMobile ? (
+            <IconButton
+              color="primary"
+              onClick={openCreateDialog}
+              sx={{ width: 40, height: 40 }}
+            >
+              <AddIcon />
+            </IconButton>
+          ) : (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={openCreateDialog}
+            >
+              Add Account
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {formError && (
@@ -115,12 +152,57 @@ const AccountsPage = () => {
       )}
 
       {isLoading ? (
-        <Box>
+        <Stack spacing={1.5}>
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} variant="rectangular" height={60} sx={{ mb: 1 }} />
+            <Skeleton key={i} variant="rounded" height={isMobile ? 72 : 60} />
           ))}
-        </Box>
+        </Stack>
+      ) : isMobile ? (
+        /* Mobile: Card layout */
+        <Stack spacing={1.5}>
+          {accounts?.map((account) => (
+            <Card key={account.id} variant="outlined">
+              <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                {/* Row 1: Name + Type chip | Edit + Delete actions */}
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {account.name}
+                    </Typography>
+                    <Chip
+                      label={accountTypeLabels[account.type] || account.type}
+                      size="small"
+                      sx={{ height: 22 }}
+                    />
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={0.5} flexShrink={0}>
+                    <IconButton size="small" onClick={() => openEditDialog(account)}>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => handleDelete(account.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                {/* Row 2: Currency, Description */}
+                <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" mt={0.25}>
+                  <Typography variant="body2" color="text.secondary">
+                    {account.currency}
+                  </Typography>
+                  {account.description && (
+                    <Typography variant="body2" color="text.secondary">
+                      {account.description}
+                    </Typography>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
       ) : (
+        /* Desktop: Table layout */
+        <Box sx={{ overflowX: 'auto' }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -152,6 +234,7 @@ const AccountsPage = () => {
             ))}
           </TableBody>
         </Table>
+        </Box>
       )}
 
       {accounts?.length === 0 && !isLoading && (

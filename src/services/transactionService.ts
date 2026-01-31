@@ -267,7 +267,7 @@ function mapFirestoreToTransaction(
   }
 }
 
-// Calculate total cost basis for a symbol (for buy transactions)
+/** @deprecated Use calculateHoldings() from holdingsCalculator.ts instead */
 export const calculateCostBasis = (transactions: Transaction[]): number => {
   return transactions
     .filter((t) => t.type === 'buy' || t.type === 'initial_position')
@@ -277,7 +277,7 @@ export const calculateCostBasis = (transactions: Transaction[]): number => {
     }, 0)
 }
 
-// Calculate total dividends received
+/** @deprecated Use calculateHoldings() from holdingsCalculator.ts instead */
 export const calculateTotalDividends = (transactions: Transaction[]): number => {
   return transactions
     .filter((t) => t.type === 'dividend')
